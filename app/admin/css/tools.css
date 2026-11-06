@@ -1,0 +1,7 @@
+/* Import / Export */
+.sc-tools-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px 22px; }
+.sc-tools-check { font-weight: 500; align-items: flex-start; }
+.sc-tools-check input { margin-top: 2px; }
+.sc-tools-notes { font-size: 12px; max-width: 420px; }
+.sc-tools-extra ul { margin: 0; padding-left: 18px; display: grid; gap: 10px; color: var(--sc-muted); }
+.sc-tools-extra code { background: rgba(255, 255, 255, 0.08); padding: 1px 6px; border-radius: 5px; color: #fff; }

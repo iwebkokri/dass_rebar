@@ -1,0 +1,66 @@
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--font-inter), 'Helvetica Neue', Arial, sans-serif;
+  color: #182845;
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: #182845; }
+a:hover { color: #7F5F47; }
+img { max-width: 100%; }
+:focus-visible { outline: 3px solid #B0A18E; outline-offset: 2px; }
+
+/* ---------- Site header (components/SiteHeader.tsx) ---------- */
+.dr-topbar-row { max-width: 1320px; margin: 0 auto; padding: 8px 32px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 24px; }
+.dr-top-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; }
+.dr-header-row { max-width: 1320px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 32px; }
+.dr-logo-link { display: flex; align-items: center; gap: 14px; text-decoration: none; min-width: 0; }
+.dr-logo-img { height: 44px; width: auto; display: block; flex: 0 0 auto; }
+.dr-tagline { border-left: 1px solid #DCDFE3; padding-left: 14px; font-size: 11px; line-height: 1.35; font-weight: 600; letter-spacing: 0.08em; color: #4A5568; white-space: nowrap; }
+.dr-nav-desktop { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 15px; font-weight: 600; }
+
+/* Hamburger button + mobile panel: hidden on desktop */
+.dr-menu-btn { display: none; align-items: center; justify-content: center; flex: 0 0 auto; width: 48px; height: 48px; padding: 0; background: #FFFFFF; border: 1px solid #C3C9D0; border-radius: 12px; color: #182845; cursor: pointer; }
+.dr-menu-btn[aria-expanded="true"] { background: #182845; border-color: #182845; color: #FFFFFF; }
+.dr-mobile-panel { display: none; }
+
+/* Logo + tagline + full nav need ~1260px; drop the tagline on smaller laptops so the nav stays on one row */
+@media (max-width: 1299px) {
+  .dr-tagline { display: none; }
+}
+
+/* Below this width the full nav no longer fits: switch to the hamburger menu */
+@media (max-width: 1179px) {
+  .dr-nav-desktop, .dr-mega { display: none !important; }
+  .dr-menu-btn { display: inline-flex; }
+  .dr-header-row { flex-wrap: nowrap; padding: 10px 20px; gap: 16px; }
+  .dr-top-address { display: none !important; }
+  .dr-topbar-row { padding: 8px 20px; }
+
+  .dr-mobile-panel { display: block; position: absolute; left: 0; right: 0; top: 100%; background: #FFFFFF; border-top: 1px solid #E3E6EA; box-shadow: 0 24px 48px rgba(24, 40, 69, 0.16); padding: 4px 20px 28px; }
+  .dr-m-item { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 54px; padding: 14px 2px; background: transparent; border: 0; border-bottom: 1px solid #E3E6EA; font: inherit; font-size: 17px; font-weight: 600; color: #182845; text-decoration: none; text-align: left; cursor: pointer; }
+  .dr-m-item[aria-current="page"], .dr-m-item[data-active="true"] { color: #7F5F47; }
+  .dr-m-chev { flex: 0 0 auto; transition: transform 0.15s ease; }
+  .dr-m-item[aria-expanded="true"] .dr-m-chev { transform: rotate(180deg); }
+  .dr-m-sub { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; padding: 12px 0 16px; border-bottom: 1px solid #E3E6EA; }
+  .dr-m-sublink { display: flex; flex-direction: column; gap: 2px; padding: 13px 16px; border-radius: 12px; background: #F4F5F7; color: #182845; text-decoration: none; }
+  .dr-m-sublink strong { font-size: 16px; font-weight: 700; }
+  .dr-m-sublink small { font-size: 14px; color: #4A5568; }
+  .dr-m-sublink--dark, .dr-m-sublink--dark:hover { background: #182845; color: #FFFFFF; }
+  .dr-m-sublink--dark small { color: #DCDFE3; }
+  .dr-m-all { grid-column: 1 / -1; padding: 10px 2px 0; font-weight: 700; color: #182845; text-decoration: none; }
+  .dr-m-cta, .dr-m-cta:hover { display: flex; align-items: center; justify-content: center; min-height: 54px; margin-top: 22px; border-radius: 999px; background: #7F5F47; color: #FFFFFF; font-size: 17px; font-weight: 700; text-decoration: none; }
+  .dr-m-meta { display: grid; gap: 4px; margin-top: 20px; font-size: 13px; color: #4A5568; text-align: center; }
+}
+
+@media (max-width: 720px) {
+  .dr-top-info { display: none; }
+  .dr-topbar-row { justify-content: space-between; flex-wrap: nowrap; }
+  .dr-top-contact { flex-wrap: nowrap; justify-content: space-between; width: 100%; gap: 12px; }
+}
+
+@media (max-width: 480px) {
+  .dr-logo-img { height: 38px; }
+}

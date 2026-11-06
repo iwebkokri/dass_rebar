@@ -1,0 +1,5 @@
+/* Activity log */
+.sc-activity-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; align-items: end; margin-bottom: 18px; padding: 16px; }
+.sc-activity-buttons { display: flex; gap: 8px; }
+.sc-activity-filters .sc-input[type="date"] { max-width: none; }
+.sc-activity-summary { max-width: 520px; word-break: break-word; }

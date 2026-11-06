@@ -1,0 +1,111 @@
+/* Posts, categories, tags and comments screens of the Studio CMS. Prefixes: po- (screens), pe- (article text editor). */
+
+/* ---------- editor layout ---------- */
+.po-layout { display: block; }
+.po-fieldset { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; border: 0; padding: 0; margin: 0; min-width: 0; }
+.po-fieldset:disabled { opacity: 0.6; }
+.po-main, .po-side { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.po-fields { display: flex; flex-direction: column; gap: 16px; }
+.po-title { font-size: 20px; font-weight: 700; padding: 12px 14px; }
+.po-slug { display: flex; align-items: center; gap: 0; }
+.po-slug > span { padding: 9px 4px 9px 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--sc-border); border-right: 0; border-radius: 8px 0 0 8px; color: var(--sc-faint); white-space: nowrap; }
+.po-slug .sc-input { border-radius: 0 8px 8px 0; }
+.po-box > h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sc-muted); margin-bottom: 14px; }
+.po-box { display: flex; flex-direction: column; gap: 12px; padding: 18px; }
+.po-box > h2 { margin-bottom: 2px; }
+.po-seo { display: flex; flex-direction: column; gap: 16px; }
+.po-options { gap: 14px; }
+.po-meta { margin: 0; color: var(--sc-faint); font-size: 12px; }
+.po-publish-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
+.po-publish-actions .sc-btn-primary { flex: 1 1 auto; }
+.po-trashed { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.po-link { color: var(--sc-muted); background: none; border: 0; padding: 0; font: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: rgba(255, 255, 255, 0.25); }
+.po-link:hover { color: #fff !important; }
+
+/* categories / tags box */
+.po-cats { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; padding-right: 4px; }
+.po-cat { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.po-cat .sc-check { font-weight: 500; }
+.po-new { color: var(--sc-ok); font-style: normal; font-size: 11px; }
+.po-primary { display: inline-flex; align-items: center; gap: 4px; color: var(--sc-faint); font-size: 11px; cursor: pointer; white-space: nowrap; }
+.po-primary input { accent-color: #fff; }
+.po-add { display: flex; gap: 8px; }
+.po-suggest { display: flex; flex-wrap: wrap; gap: 6px; }
+.po-chip { border: 1px solid var(--sc-border); background: transparent; color: var(--sc-muted); border-radius: 999px; padding: 2px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+.po-chip:hover { color: #fff; border-color: var(--sc-border-strong); }
+
+/* revisions */
+.po-revisions { margin-top: 20px; }
+.po-revisions ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.po-revisions summary { cursor: pointer; padding: 6px 0; }
+.po-rev-when { font-weight: 600; }
+.po-rev-text { max-height: 260px; overflow: auto; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--sc-border); border-radius: 8px; padding: 12px; margin: 8px 0 10px; font-size: 13px; }
+
+/* ---------- article text editor ---------- */
+.pe-wrap { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--sc-border); border-radius: 10px; overflow: hidden; background: rgba(0, 0, 0, 0.25); }
+.pe-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--sc-border); background: var(--sc-surface-2); }
+.pe-tabs { display: flex; gap: 4px; }
+.pe-tabs button { border: 0; background: transparent; color: var(--sc-muted); font: inherit; font-weight: 600; padding: 5px 12px; border-radius: 7px; cursor: pointer; }
+.pe-tabs button:hover { color: #fff; }
+.pe-tabs button.is-on { background: #fff; color: #000; }
+.pe-bar { display: flex; flex-wrap: wrap; gap: 4px; }
+.pe-tool { min-width: 34px; height: 30px; padding: 0 10px; border: 1px solid var(--sc-border); background: transparent; color: #fff; border-radius: 7px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.pe-tool:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--sc-border-strong); }
+.pe-tool.is-bold { font-weight: 800; }
+.pe-textarea { border: 0 !important; border-radius: 0 !important; min-height: 460px; background: transparent !important; line-height: 1.65; font-size: 15px; box-shadow: none !important; resize: vertical; }
+.pe-textarea[hidden] { display: none; }
+.pe-preview { background: #F4F5F7; color: #182845; padding: 28px 24px 36px; min-height: 460px; max-height: 70vh; overflow: auto; font-family: var(--font-inter), 'Helvetica Neue', Arial, sans-serif; }
+.pe-preview-inner { max-width: 760px; margin: 0 auto; }
+.pe-preview-inner > :first-child { margin-top: 0 !important; }
+.pe-empty { color: #4A5568; text-align: center; margin: 80px 0; }
+.pe-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; padding: 8px 12px; border-top: 1px solid var(--sc-border); color: var(--sc-faint); font-size: 12px; }
+.pe-help code { background: rgba(255, 255, 255, 0.08); padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+
+/* ---------- lists ---------- */
+.po-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 16px; margin-bottom: 14px; align-items: center; }
+.po-bulk, .po-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.po-bulk .sc-select, .po-filter .sc-select { width: auto; min-width: 150px; padding: 5px 10px; height: 30px; }
+.po-filter .sc-input { width: 220px; padding: 5px 10px; height: 30px; }
+.po-table .po-check { width: 34px; }
+.po-table .po-num { text-align: right; white-space: nowrap; }
+.po-table th.po-num { text-align: right; }
+.po-table td { vertical-align: top; }
+.po-title-cell { min-width: 260px; }
+.po-title-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.po-title-line .sc-badge { font-size: 11px; padding: 0 7px; }
+.po-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; margin-top: 4px; font-size: 12.5px; }
+.po-act { background: none; border: 0; padding: 0; font: inherit; font-size: 12.5px; color: var(--sc-muted); cursor: pointer; text-decoration: none; }
+.po-act:hover { color: #fff !important; text-decoration: underline; }
+.po-act-danger { color: var(--sc-danger); }
+.po-act-danger:hover { color: var(--sc-danger) !important; }
+.po-date { white-space: nowrap; font-size: 13px; }
+.po-bubble { display: inline-block; margin-left: 6px; background: var(--sc-danger); color: #000 !important; border-radius: 999px; font-size: 11px; font-weight: 700; padding: 0 7px; }
+.po-pending > td { background: rgba(227, 179, 65, 0.05); }
+.po-editing > td { background: rgba(255, 255, 255, 0.05); }
+
+/* quick edit / reply / edit panels (CSS-only toggles: a hidden checkbox + its label) */
+.po-qe-panel, .po-panel { display: none; flex: 0 0 100%; margin-top: 8px; padding: 14px; background: var(--sc-surface-2); border: 1px solid var(--sc-border); border-radius: 10px; }
+.po-qe-toggle:checked ~ .po-qe-panel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
+.po-t-reply:checked ~ .po-p-reply, .po-t-edit:checked ~ .po-p-edit { display: flex; flex-direction: column; gap: 8px; }
+.po-qe-buttons { grid-column: 1 / -1; display: flex; gap: 8px; }
+.po-qe-panel .sc-field > label { font-size: 12px; }
+
+/* comments */
+.po-comment { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 62ch; }
+.po-meta-line { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 12px; }
+.po-meta-line .sc-badge { font-size: 11px; padding: 0 7px; }
+.po-author { min-width: 150px; word-break: break-word; }
+.po-comment-cell { min-width: 320px; }
+
+/* categories + tags */
+.po-terms { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; }
+.po-stack { display: flex; flex-direction: column; gap: 14px; }
+
+@media (max-width: 1100px) {
+  .po-fieldset { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .po-terms { grid-template-columns: minmax(0, 1fr); }
+  .po-qe-toggle:checked ~ .po-qe-panel { grid-template-columns: minmax(0, 1fr); }
+  .po-filter .sc-input { width: 100%; }
+}

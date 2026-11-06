@@ -1,0 +1,16 @@
+/* Users area (/admin/users, /new, /[id]) */
+.sc-users-role { text-transform: capitalize; }
+.sc-users-role-administrator { color: #fff; border-color: var(--sc-border-strong); }
+.sc-users-role-editor { color: var(--sc-ok); border-color: rgba(86, 211, 100, 0.4); }
+.sc-users-role-author { color: var(--sc-warn); border-color: rgba(227, 179, 65, 0.4); }
+.sc-users-roles { margin-top: 28px; }
+.sc-users-cap { text-align: center !important; width: 120px; }
+.sc-users-yes { color: var(--sc-ok); font-weight: 700; }
+.sc-users-help { margin: 16px 0 0; padding-left: 18px; color: var(--sc-muted); display: grid; gap: 6px; }
+.sc-users-help strong { color: #fff; }
+.sc-users-secret { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.sc-users-secret-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.sc-users-secret code { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 16px; letter-spacing: 0.04em; padding: 8px 12px; border-radius: 8px; background: rgba(0, 0, 0, 0.45); border: 1px solid var(--sc-border-strong); color: #fff; user-select: all; word-break: break-all; }
+.sc-users-radios { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.sc-users-done-links { display: flex; gap: 18px; margin-top: 12px; }
+.sc-users-danger { border-color: rgba(255, 123, 114, 0.3); }

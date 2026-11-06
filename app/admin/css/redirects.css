@@ -1,0 +1,7 @@
+/* Redirects area */
+.sc-redir-search { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.sc-redir-search .sc-input { max-width: 360px; }
+.sc-redir-from, .sc-redir-to { word-break: break-all; max-width: 320px; font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 13px; }
+.sc-redir-bulk { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.sc-redir-msg { font-size: 12px; margin-top: 4px; max-width: 360px; }
+.sc-redir-import code { background: rgba(255, 255, 255, 0.08); padding: 1px 6px; border-radius: 5px; }
