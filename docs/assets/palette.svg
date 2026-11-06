@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="152" viewBox="0 0 980 152" role="img" aria-labelledby="t">
+  <title id="t">Dass Rebar brand colours: navy #182845, light grey #DCDFE3, steel #919CA4, brown #7F5F47, tan #B0A18E, olive #8D8E55</title>
+  <rect width="980" height="152" rx="16" fill="#F6F7F9" stroke="#E1E4E8"/>
+  <g transform="translate(10 14)" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" text-anchor="middle">
+    <g>
+      <rect x="4"   y="4" width="144" height="70" rx="12" fill="#182845"/>
+      <text x="76"  y="98"  font-size="14" font-weight="700" fill="#182845">Navy</text>
+      <text x="76"  y="118" font-size="13" fill="#5b6470">#182845</text>
+    </g>
+    <g>
+      <rect x="164" y="4" width="144" height="70" rx="12" fill="#DCDFE3" stroke="#c4c9cf"/>
+      <text x="236" y="98"  font-size="14" font-weight="700" fill="#182845">Light grey</text>
+      <text x="236" y="118" font-size="13" fill="#5b6470">#DCDFE3</text>
+    </g>
+    <g>
+      <rect x="324" y="4" width="144" height="70" rx="12" fill="#919CA4"/>
+      <text x="396" y="98"  font-size="14" font-weight="700" fill="#182845">Steel</text>
+      <text x="396" y="118" font-size="13" fill="#5b6470">#919CA4</text>
+    </g>
+    <g>
+      <rect x="484" y="4" width="144" height="70" rx="12" fill="#7F5F47"/>
+      <text x="556" y="98"  font-size="14" font-weight="700" fill="#182845">Brown (buttons)</text>
+      <text x="556" y="118" font-size="13" fill="#5b6470">#7F5F47</text>
+    </g>
+    <g>
+      <rect x="644" y="4" width="144" height="70" rx="12" fill="#B0A18E"/>
+      <text x="716" y="98"  font-size="14" font-weight="700" fill="#182845">Tan</text>
+      <text x="716" y="118" font-size="13" fill="#5b6470">#B0A18E</text>
+    </g>
+    <g>
+      <rect x="804" y="4" width="144" height="70" rx="12" fill="#8D8E55"/>
+      <text x="876" y="98"  font-size="14" font-weight="700" fill="#182845">Olive</text>
+      <text x="876" y="118" font-size="13" fill="#5b6470">#8D8E55</text>
+    </g>
+  </g>
+</svg>
