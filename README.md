@@ -139,6 +139,10 @@ Users, settings, header and footer, redirects, import / export, **SEO & AI**, **
 
 Four goals, one place. Per-page fields live in the builder's **SEO & AI** tab and in each page's settings; site-wide settings are under **SEO & AI** in the admin.
 
+<p align="center">
+  <img src="docs/images/admin-seo.jpg" alt="The SEO and AI settings page with tabs for General, Business profile, Robots and AI crawlers, AI and llms.txt, Structured data and the 404 monitor" width="86%">
+</p>
+
 | Goal | In plain terms | What the site does |
 |---|---|---|
 | **SEO** | Ranking in classic search | Title template, canonical URLs, index / follow per page, Open Graph and Twitter cards, search-console verification codes, a sitemap with last-modified dates that skips noindex pages, redirects, and a 404 monitor that turns a missing address into a redirect in one click |
