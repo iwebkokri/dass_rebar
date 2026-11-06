@@ -98,5 +98,3 @@ emailed notifications. Without SMTP, submissions are still saved and shown in th
 ## Brand
 
 Navy `#182845`, light grey `#DCDFE3`, steel `#919CA4`, brown `#7F5F47` (buttons), tan `#B0A18E`, olive `#8D8E55` (editable under Settings → Design).
-#   d a s s _ r e b a r  
- 
