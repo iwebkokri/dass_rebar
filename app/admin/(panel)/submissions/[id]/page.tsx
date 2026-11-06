@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ConfirmButton from '@/components/admin/ConfirmButton';
+import { sendSubmissionToLeadManager } from '@/app/admin/lead-manager/actions';
 import Flash, { type FlashParams } from '@/components/admin/Flash';
 import { requireCap } from '@/lib/auth';
 import { all, get, run } from '@/lib/db';
@@ -14,11 +15,12 @@ import { deleteSubmission, updateSubmission } from '../../../actions';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Submission' };
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<FlashParams> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<FlashParams & { lm?: string }> };
 
 const kb = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
 export default async function SubmissionDetail({ params, searchParams }: Props) {
+  const sp = await searchParams;
   const user = await requireCap('view_submissions');
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound();
@@ -56,7 +58,8 @@ export default async function SubmissionDetail({ params, searchParams }: Props) 
         {reply && <a className="sc-btn sc-btn-primary" href={reply}>Reply by email</a>}
       </div>
 
-      <Flash params={await searchParams} />
+      <Flash params={sp} />
+      {sp.lm && <div className="sc-flash sc-flash-ok" role="status">{sp.lm.slice(0, 400)}</div>}
 
       <div className="sc-stack">
         <div className="sc-card">
@@ -104,15 +107,23 @@ export default async function SubmissionDetail({ params, searchParams }: Props) 
           </dl>
         </div>
 
-        {fwd && (
+        {ready && (fwd || can(user, 'manage_integrations')) && (
           <div className="sc-card" data-section="lead-manager">
             <h2>Lead Manager</h2>
+            {!fwd ? <p className="sc-muted" style={{ margin: 0 }}>This lead was never sent to Lead Manager.</p> : (
             <p style={{ margin: 0 }}>
               <span className={`sc-badge ${fwd.status === 'accepted' ? 'sc-badge-ok' : fwd.status === 'skipped' ? '' : fwd.status === 'failed' && fwd.next_attempt_at ? 'sc-badge-warn' : 'sc-badge-new'}`}>{fwd.status === 'failed' && fwd.next_attempt_at ? 'retrying' : fwd.status}</span>{' '}
               {fwd.status === 'accepted' ? 'Recorded in Lead Manager' : fwd.status === 'skipped' ? fwd.reason : fwd.error || 'Waiting to be sent'}
               <span className="sc-muted"> · {stamp(fwd.sent_at || fwd.created_at)}{fwd.http_status ? ` · HTTP ${fwd.http_status}` : ''}{fwd.attempts > 1 ? ` · ${fwd.attempts} attempts` : ''}</span>
               {can(user, 'manage_integrations') ? <> · <Link className="sc-rowlink" href="/admin/lead-manager?tab=log">delivery log</Link></> : null}
-            </p>
+            </p>)}
+            {can(user, 'manage_integrations') && (!fwd || ['skipped', 'failed', 'refused'].includes(fwd.status)) && (
+              <form action={sendSubmissionToLeadManager} style={{ marginTop: 12 }}>
+                <input type="hidden" name="id" value={s.id} />
+                <button type="submit" className="sc-btn sc-btn-primary" data-action="send-to-lm">Send to Lead Manager now</button>
+                <span className="sc-help" style={{ marginLeft: 10 }}>Sends this enquiry with the same reference every time, so Lead Manager never creates a duplicate.</span>
+              </form>
+            )}
           </div>
         )}
 

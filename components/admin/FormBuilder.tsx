@@ -292,7 +292,7 @@ export default function FormBuilder({ id, initial, usage, submissions, submissio
         <div className="sc-card" aria-labelledby="fm-lm">
           <h2 id="fm-lm">Lead Manager</h2>
           <label className="sc-check"><input type="checkbox" checked={settings.leadManager} onChange={(e) => setSettings({ ...settings, leadManager: e.target.checked })} /> Send each submission to Lead Manager</label>
-          <span className="sc-help">{lmConfigured ? 'Every enquiry made with this form is also recorded in your lead-management software.' : 'Lead Manager isn’t set up yet, so nothing is forwarded for now (Lead Manager page in the admin).'} Turn it off for forms that are not enquiries, like a newsletter sign-up.</span>
+          <span className="sc-help">{lmConfigured ? 'Every enquiry made with this form is also recorded in your lead-management software.' : 'Lead Manager isn’t set up yet, so nothing is forwarded for now (Lead Manager page in the admin).'} It is on for every form by default; turn it off only for a form you do not want in your lead list.</span>
         </div>
 
         <div className="sc-card" aria-labelledby="fm-mail">

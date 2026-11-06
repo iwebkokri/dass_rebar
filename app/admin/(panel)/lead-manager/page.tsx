@@ -99,13 +99,13 @@ function SettingsTab({ ready }: { ready: boolean }) {
           <div className="sc-field is-wide">
             <span className="sc-label">Built-in forms</span>
             {(Object.keys(LM_TYPE_LABEL) as Array<keyof LmTypes>).map((k) => (
-              <label key={k} className="sc-check"><input type="checkbox" name={`t_${k}`} value="1" defaultChecked={types[k]} /> {LM_TYPE_LABEL[k]}{k === 'newsletter' ? ' — subscriptions, not enquiries (off by default)' : ''}</label>
+              <label key={k} className="sc-check"><input type="checkbox" name={`t_${k}`} value="1" defaultChecked={types[k]} /> {k === 'newsletter' ? 'Send newsletter sign-ups too' : LM_TYPE_LABEL[k]}{k === 'newsletter' ? ' (footer and popups)' : ''}</label>
             ))}
-            <span className="sc-help">Forms you built under <Link className="sc-rowlink" href="/admin/forms">Forms</Link> (also inside popups) have their own “Send to Lead Manager” switch.</span>
+            <span className="sc-help">Everything is sent by default. Forms you built under <Link className="sc-rowlink" href="/admin/forms">Forms</Link> (also inside popups) have their own “Send to Lead Manager” switch, on by default.</span>
           </div>
           <div className="sc-field is-wide">
-            <label className="sc-check"><input type="checkbox" name="skip_staff" value="1" defaultChecked={cfg.skipStaff} /> Skip submissions made by signed-in staff</label>
-            <span className="sc-help">So the team testing the forms does not fill the lead list. Such submissions appear in the log as “skipped”.</span>
+            <label className="sc-check"><input type="checkbox" name="skip_staff" value="1" defaultChecked={cfg.skipStaff} /> Skip submissions made by signed-in staff (use this if your team tests forms in production)</label>
+            <span className="sc-help">Off by default: a submission made while you are signed in is recorded in Lead Manager like any other. When this is ticked, staff submissions are logged as “skipped” instead (and can be sent later from the lead’s page).</span>
           </div>
         </section>
 

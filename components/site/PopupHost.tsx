@@ -45,6 +45,7 @@ export default function PopupHost({ items }: { items: PopupItem[] }) {
   const box = useRef<HTMLDivElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
   const forced = useRef(false); // opened by a link / preview: not recorded as an automatic showing
+  const viewsRef = useRef<{ path: string | null; n: number }>({ path: null, n: 1 }); // page views of this visit (counted once per page, even if React runs the effect twice in development)
 
   const close = useCallback(() => {
     const id = openRef.current;
@@ -75,8 +76,11 @@ export default function PopupHost({ items }: { items: PopupItem[] }) {
   useEffect(() => {
     const cleanups: Array<() => void> = [];
     const list = itemsRef.current;
-    let views = 1;
-    try { views = Number(sessionStorage.getItem('dr_pv') || 0) + 1; sessionStorage.setItem('dr_pv', String(views)); } catch { /* ignore */ }
+    let views = viewsRef.current.n;
+    if (viewsRef.current.path !== pathname) {
+      try { views = Number(sessionStorage.getItem('dr_pv') || 0) + 1; sessionStorage.setItem('dr_pv', String(views)); } catch { views = viewsRef.current.n + 1; }
+      viewsRef.current = { path: pathname, n: views };
+    }
 
     // preview (signed-in staff only: the server only sends non-live popups to them) and #popup:<slug> in the address
     const pv = Number(new URLSearchParams(window.location.search).get('popup-preview'));
@@ -137,8 +141,15 @@ export default function PopupHost({ items }: { items: PopupItem[] }) {
       e.preventDefault();
       if (openRef.current === null) open(it.id, true, a);
     };
+    // the address changed to #popup:<slug> without a reload (e.g. a link elsewhere on the page, or the back button)
+    const onHash = () => {
+      const m = /^#(?:popup:([a-z0-9-]+)|dr-popup-(d+))$/.exec(window.location.hash);
+      const it = m && itemsRef.current.find((x) => (m[1] ? x.slug === m[1] : String(x.id) === m[2]) && !x.preview);
+      if (it && openRef.current === null) open(it.id, true);
+    };
     document.addEventListener('click', onClick, true);
-    return () => document.removeEventListener('click', onClick, true);
+    window.addEventListener('hashchange', onHash);
+    return () => { document.removeEventListener('click', onClick, true); window.removeEventListener('hashchange', onHash); };
   }, [open, close]);
 
   // ---- a form inside the open popup was sent: remember it ("never again"), optionally close after a moment

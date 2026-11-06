@@ -9,13 +9,13 @@ import { maskUrl, urlHost, validateWebhookUrl } from './lm-url.mjs';
 export const allowInsecure = () => process.env.LEADMANAGER_ALLOW_INSECURE === '1';
 
 export type LmTypes = { contact: boolean; quote: boolean; calculator: boolean; newsletter: boolean };
-/** Which BUILT-IN forms are forwarded. Newsletter sign-ups are subscriptions, not enquiries, so they are off by default. */
-export const DEFAULT_TYPES: LmTypes = { contact: true, quote: true, calculator: true, newsletter: false };
+/** Which BUILT-IN forms are forwarded. Everything is forwarded by default — including newsletter sign-ups (the footer form is the only form on many pages). */
+export const DEFAULT_TYPES: LmTypes = { contact: true, quote: true, calculator: true, newsletter: true };
 export const LM_TYPE_LABEL: Record<keyof LmTypes, string> = {
   contact: 'Contact form',
   quote: 'Quote request (quote wizard)',
   calculator: 'Weight calculator leads',
-  newsletter: 'Newsletter sign-ups',
+  newsletter: 'Newsletter sign-ups (footer and popups)',
 };
 
 const K = {
@@ -56,7 +56,7 @@ function readTypes(): LmTypes {
       contact: raw.contact !== false,
       quote: raw.quote !== false,
       calculator: raw.calculator !== false,
-      newsletter: raw.newsletter === true,
+      newsletter: raw.newsletter !== false, // a missing value means ON
     };
   } catch {
     return { ...DEFAULT_TYPES };
@@ -97,7 +97,7 @@ export function getLmConfig(): LmConfig {
     host: url ? urlHost(url) : '',
     masked: url ? maskUrl(url) : '',
     hasKey: !!key,
-    skipStaff: getSetting(K.skipStaff) !== '0',
+    skipStaff: getSetting(K.skipStaff) === '1', // OFF unless the administrator ticks the box: staff submissions are forwarded too
     types: readTypes(),
     configured: valid && enabled,
     problems,

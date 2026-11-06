@@ -66,8 +66,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
       { id: 'email', type: 'email', label: 'Email', required: true, width: 'full', contact: true, placeholder: 'you@example.com' },
       { id: 'consent', type: 'consent', label: 'I agree to receive updates by email. I can unsubscribe at any time.', required: true, width: 'full' },
     ],
-    // a subscription, not an enquiry: not forwarded to Lead Manager unless the owner switches it on
-    settings: { submitLabel: 'Subscribe', successMessage: 'Thanks — you are subscribed.', leadManager: false },
+    settings: { submitLabel: 'Subscribe', successMessage: 'Thanks — you are subscribed.' },
   },
   {
     id: 'feedback',

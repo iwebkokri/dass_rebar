@@ -196,7 +196,7 @@ export async function forwardLead(submissionId: number, opts: { origin?: string;
     if (!row || row.status !== 'queued' || row.attempts > 0) return; // already handled: never double-send
 
     let reason = shouldForward(cfg, sub.type, def);
-    if (!reason && opts.staff && cfg.skipStaff) reason = 'Submitted by a signed-in staff member — skipped so tests do not reach Lead Manager (Lead Manager settings).';
+    if (!reason && opts.staff && cfg.skipStaff) reason = 'Submitted by a signed-in staff member — skipped because “Skip submissions made by signed-in staff” is ticked (Lead Manager settings).';
     if (reason) {
       run("UPDATE lead_forwards SET status = 'skipped', reason = ? WHERE id = ?", reason, row.id);
       return;
@@ -217,6 +217,18 @@ export async function resendForward(rowId: number, origin?: string) {
   if (t) { clearTimeout(t); state().timers.delete(rowId); }
   run("UPDATE lead_forwards SET attempts = 0, status = 'queued', reason = '', error = '', next_attempt_at = NULL WHERE id = ?", rowId);
   return deliverForward(rowId, true);
+}
+
+/** "Send to Lead Manager now" on a lead's page: creates the log row if there is none (older leads), then sends with the same externalId. */
+export async function forwardSubmissionNow(submissionId: number, origin?: string) {
+  if (!dbReady()) return { status: 'failed' as ForwardStatus, error: NOT_READY_MESSAGE };
+  const sub = get<PayloadSub>('SELECT * FROM submissions WHERE id = ?', submissionId);
+  if (!sub) return { status: 'failed' as ForwardStatus, error: 'That submission no longer exists.' };
+  const def = sub.type.startsWith('form:') ? getFormBySlug(sub.type.slice(5)) : undefined;
+  run('INSERT OR IGNORE INTO lead_forwards (submission_id, kind, external_id, form_name) VALUES (?, ?, ?, ?)', submissionId, 'lead', externalIdFor(submissionId), formNameFor(sub, def));
+  const row = get<ForwardRow>('SELECT * FROM lead_forwards WHERE submission_id = ?', submissionId);
+  if (!row) return { status: 'failed' as ForwardStatus, error: 'Could not create the log entry.' };
+  return resendForward(row.id, origin);
 }
 
 /** "Send test lead": a real lead named "Test Person (website test)" / formName "Admin test"; shows the vendor's status + response. */

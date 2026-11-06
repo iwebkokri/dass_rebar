@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { logActivity } from '@/lib/activity';
 import { requireCap } from '@/lib/auth';
-import { resendForward, sendTestLead } from '@/lib/leadmanager';
+import { forwardSubmissionNow, resendForward, sendTestLead } from '@/lib/leadmanager';
 import { saveLmSettings } from '@/lib/leadmanager-settings';
 
 const text = (fd: FormData, key: string, max: number) => String(fd.get(key) ?? '').replace(/\u0000/g, '').slice(0, max);
@@ -48,6 +48,18 @@ export async function sendTestLeadAction() {
   const detail = `${r.http ? `HTTP ${r.http}` : 'no response'}${r.response ? ` — ${r.response}` : ''}`;
   if (r.status === 'accepted') go('settings', { ok: `Test lead accepted by Lead Manager (${detail}). Look for “Test Person (website test)” in your lead list.` });
   go('settings', { error: `The test lead was not accepted: ${r.error || 'unknown error'} (${detail})` });
+}
+
+/** The "Send to Lead Manager now" button on a lead's page (skipped, failed, refused or never-sent leads). */
+export async function sendSubmissionToLeadManager(fd: FormData) {
+  const user = await requireCap('manage_integrations');
+  const id = Number(fd.get('id'));
+  if (!Number.isInteger(id) || id < 1) redirect('/admin/submissions');
+  const r = await forwardSubmissionNow(id, await requestOrigin());
+  logActivity(user, 'send', 'integration', id, `Lead #${id} sent to Lead Manager now: ${r.status}`);
+  const detail = `${r.http ? `HTTP ${r.http}` : ''}${r.response ? ` — ${r.response}` : ''}`.trim();
+  const qs = new URLSearchParams(r.status === 'accepted' ? { lm: `Sent to Lead Manager. ${detail}`.trim() } : { error: `Not accepted by Lead Manager: ${r.error || 'unknown error'} ${detail}`.trim() });
+  redirect(`/admin/submissions/${id}?${qs.toString()}`);
 }
 
 export async function resendLeadForward(fd: FormData) {

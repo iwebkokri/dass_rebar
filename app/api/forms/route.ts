@@ -109,13 +109,31 @@ async function finish(row: NewSubmission, src: Source, files: Array<{ file: File
   const id = transaction(() => insertSubmission(row));
 
   const stored: Array<StoredAttachment & { field?: string }> = [];
-  for (const { file, label } of files) stored.push({ ...(await saveAttachment(id, file)), ...(labelled && label ? { field: label } : {}) });
-  if (stored.length) setAttachments(id, stored);
+  try {
+    for (const { file, label } of files) stored.push({ ...(await saveAttachment(id, file)), ...(labelled && label ? { field: label } : {}) });
+    if (stored.length) setAttachments(id, stored);
+  } catch (err) {
+    // the enquiry is already saved: still email it / forward it (without the file) rather than lose it, then report the problem
+    console.error('[forms] could not store an attachment for submission', id, err instanceof Error ? err.message : err);
+    if (stored.length) setAttachments(id, stored);
+    await schedule(id, siteOrigin);
+    throw err;
+  }
 
   // Two independent jobs after the response: the owner email and the Lead Manager forward. Each catches its own errors, so one failing
   // never affects the other or the visitor. `staff` = a signed-in CMS user (their test submissions are not forwarded unless allowed).
+  await schedule(id, siteOrigin);
+  return json({ ok: true });
+}
+
+/**
+ * The ONE place both follow-up jobs are registered, for every kind of lead (contact, quote, calculator, newsletter, custom forms, forms in
+ * popups): the owner email and the Lead Manager forward. They run AFTER the response (Next's after(): it also runs when the response
+ * errors or returns early), each catches its own errors, so one failing never affects the other or the visitor.
+ * `staff` = a signed-in CMS user; their submissions are forwarded too unless the administrator ticked "skip staff" on the Lead Manager page.
+ */
+async function schedule(id: number, siteOrigin: string) {
   const staff = !!(await getCurrentUser().catch(() => null));
   after(() => notifyLead(id, siteOrigin));
   after(() => forwardLead(id, { origin: siteOrigin, staff }));
-  return json({ ok: true });
 }
