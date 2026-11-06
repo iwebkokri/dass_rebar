@@ -28,7 +28,8 @@ export const POPUP_PRESETS = {
         eyebrow('STAY IN THE LOOP'),
         title('Rebar news, straight to your inbox'),
         body('Price updates, stock alerts and project stories — a few emails a month, no spam. Unsubscribe any time.'),
-        w.newsletter({ placeholder: 'you@company.com', buttonLabel: 'Subscribe', successText: 'Thanks — you’re on the list.', btnBg: BROWN, btnColor: '#FFFFFF' }),
+        // light field colours: the widget's default (dark) field is made for the footer, not for a white popup
+        w.newsletter({ placeholder: 'you@company.com', buttonLabel: 'Subscribe', successText: 'Thanks — you’re on the list.', btnBg: BROWN, btnColor: '#FFFFFF', fieldBg: '#F4F5F7', fieldColor: NAVY, fieldBorder: '#C9CFD6' }),
       ),
     ],
   },
