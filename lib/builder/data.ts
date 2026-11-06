@@ -3,6 +3,7 @@ import { all } from '../db';
 import { getBarData, getDiagrams, getPosts, getProducts, getProjects } from '../content';
 import { parseDoc } from './tree.mjs';
 import { slugify } from '../slug.mjs';
+import { publicSettings } from '../forms-shared';
 import type { BuilderData, FormDef, MenuItem } from './types';
 
 export const ALL_NEEDS = ['posts', 'projects', 'products', 'bars', 'diagrams', 'menus', 'forms', 'templates', 'categories'];
@@ -26,7 +27,8 @@ export function loadBuilderData(needs: Iterable<string> | 'all'): BuilderData {
   if (want.has('forms')) {
     data.forms = {};
     for (const f of all<{ id: number; name: string; slug: string; fields: string; settings: string }>('SELECT * FROM forms')) {
-      data.forms[String(f.id)] = { id: f.id, name: f.name, slug: f.slug, fields: json(f.fields, []), settings: json(f.settings, {}) } as FormDef;
+      // only the settings the browser needs — never the owner's recipient addresses or the auto-reply text
+      data.forms[String(f.id)] = { id: f.id, name: f.name, slug: f.slug, fields: json(f.fields, []), settings: publicSettings(json(f.settings, {})) } as FormDef;
     }
   }
   if (want.has('templates')) {

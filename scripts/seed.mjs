@@ -69,6 +69,7 @@ report.push('settings: defaults ensured');
 // Definitions live in db/pages/*.mjs, db/templates/*.mjs and db/menus/*.mjs (auto-discovered; each has a default export).
 // Only what is missing is added.   --reset-pages        rewrites every discovered definition
 //                                   --only=home,about   rewrites just those files (names without .mjs)
+//                                   --seo-fields        fills EMPTY focus keyword / answer summary on existing pages (content untouched)
 const resetAll = process.argv.includes('--reset-pages');
 const only = (process.argv.find((a) => a.startsWith('--only=')) || '').replace('--only=', '').split(',').filter(Boolean);
 const rewrite = (name) => resetAll || only.includes(name);
@@ -90,6 +91,21 @@ async function discover(dir) {
   return out;
 }
 
+// --seo-fields: give EXISTING pages the focus keyword / direct-answer summary from the definitions, but ONLY where the page has none yet.
+// Page content, titles and everything else stay exactly as they are, so it is safe on a live site.
+const seoFieldsOnly = process.argv.includes('--seo-fields');
+if (seoFieldsOnly) {
+  let filled = 0;
+  for (const { value: def } of await discover('pages')) {
+    const row = db.prepare('SELECT id, focus_keyword, answer_summary FROM pages WHERE path = ?').get(def.path);
+    if (!row) continue;
+    if (!row.answer_summary && def.answerSummary) { db.prepare("UPDATE pages SET answer_summary = ? WHERE id = ?").run(def.answerSummary, row.id); filled++; }
+    if (!row.focus_keyword && def.focusKeyword) { db.prepare("UPDATE pages SET focus_keyword = ? WHERE id = ?").run(def.focusKeyword, row.id); filled++; }
+  }
+  console.log(`SEO fields: ${filled} empty field${filled === 1 ? '' : 's'} filled on existing pages (content untouched)`);
+  process.exit(0);
+}
+
 let pagesWritten = 0;
 for (const { name, value: def } of await discover('pages')) {
   try {
@@ -97,11 +113,11 @@ for (const { name, value: def } of await discover('pages')) {
     if (existing && !rewrite(name)) continue;
     const content = JSON.stringify(clean(def.content));
     if (existing) {
-      db.prepare("UPDATE pages SET title = ?, content = ?, seo_title = ?, seo_description = ?, layout = ?, updated_at = datetime('now') WHERE id = ?")
-        .run(def.title, content, def.seoTitle || '', def.seoDescription || '', def.layout || 'default', existing.id);
+      db.prepare("UPDATE pages SET title = ?, content = ?, seo_title = ?, seo_description = ?, focus_keyword = ?, answer_summary = ?, layout = ?, updated_at = datetime('now') WHERE id = ?")
+        .run(def.title, content, def.seoTitle || '', def.seoDescription || '', def.focusKeyword || '', def.answerSummary || '', def.layout || 'default', existing.id);
     } else {
-      db.prepare("INSERT INTO pages (path, title, status, layout, content, seo_title, seo_description, published_at) VALUES (?, ?, 'published', ?, ?, ?, ?, datetime('now'))")
-        .run(def.path, def.title, def.layout || 'default', content, def.seoTitle || '', def.seoDescription || '');
+      db.prepare("INSERT INTO pages (path, title, status, layout, content, seo_title, seo_description, focus_keyword, answer_summary, published_at) VALUES (?, ?, 'published', ?, ?, ?, ?, ?, ?, datetime('now'))")
+        .run(def.path, def.title, def.layout || 'default', content, def.seoTitle || '', def.seoDescription || '', def.focusKeyword || '', def.answerSummary || '');
     }
     pagesWritten++;
   } catch (err) { report.push(`pages/${name}: FAILED — ${err.message}`); }
@@ -119,7 +135,8 @@ for (const { name: file, value: list } of await discover('templates')) {
       else {
         const live = t.kind === 'header' || t.kind === 'footer';
         const hasActive = live && db.prepare('SELECT 1 FROM templates WHERE kind = ? AND active = 1').get(t.kind);
-        db.prepare('INSERT INTO templates (kind, name, content, active) VALUES (?, ?, ?, ?)').run(t.kind, t.name, content, live && !hasActive ? 1 : 0);
+        // popups carry their settings (partial is fine: missing values get their defaults when read) and are always written SWITCHED OFF
+        db.prepare('INSERT INTO templates (kind, name, content, active, settings) VALUES (?, ?, ?, ?, ?)').run(t.kind, t.name, content, live && !hasActive ? 1 : 0, JSON.stringify(t.settings || {}));
       }
       tplWritten++;
     } catch (err) { report.push(`templates/${file} (${t.name}): FAILED — ${err.message}`); }

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import Flash, { type FlashParams } from '@/components/admin/Flash';
 import MediaField from '@/components/admin/MediaField';
 import { SettingsPalette } from '@/components/admin/SettingsPalette';
@@ -53,14 +54,12 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           <div className="sc-field is-wide"><label htmlFor="contact_address">Address</label><textarea className="sc-textarea" id="contact_address" name="contact_address" defaultValue={s.contact_address} rows={3} maxLength={400} /></div>
         </section>
 
-        <section className="sc-card sc-form" aria-labelledby="set-seo">
-          <h2 id="set-seo" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>Search &amp; social defaults</h2>
-          <div className="sc-field is-wide">
-            <label htmlFor="seo_default_description">Default description</label>
-            <textarea className="sc-textarea" id="seo_default_description" name="seo_default_description" defaultValue={s.seo_default_description} rows={3} maxLength={320} placeholder={SITE_DEFAULTS.description} />
-            <span className="sc-help">Used by pages that don’t have their own description (around 150–160 characters works best).</span>
-          </div>
-          <div className="sc-field is-wide"><MediaField name="seo_default_og_image__pick" defaultValue={s.seo_default_og_image} kind="image" label="Default social sharing image" help="Shown when a page is shared on social media and has no image of its own (1200×630 works well)." /></div>
+        <section className="sc-card" aria-labelledby="set-seo">
+          <h2 id="set-seo">Search &amp; social</h2>
+          <p className="sc-muted" style={{ margin: 0 }}>
+            The default description, social sharing image, title format, business profile, crawler rules and llms.txt now live under{' '}
+            <Link href="/admin/seo" className="sc-rowlink">SEO &amp; AI</Link>. Tracking IDs and custom code are under <Link href="/admin/tracking" className="sc-rowlink">Tracking &amp; code</Link>.
+          </p>
         </section>
 
         <section className="sc-card" aria-labelledby="set-design">

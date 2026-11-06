@@ -8,11 +8,12 @@ import { can } from '@/lib/roles';
 import { logActivity } from '@/lib/activity';
 import { sanitizeDoc } from '@/lib/builder/sanitize.mjs';
 import { cloneNode, parseDoc } from '@/lib/builder/tree.mjs';
+import { cleanContentSeo } from '@/lib/seo-core.mjs';
 import type { BNode } from '@/lib/builder/types';
 
 type Entry = { id: number; nodes: BNode[]; base: string };
 export type SaveInput = {
-  page?: Entry & { title?: string; status?: 'draft' | 'published' };
+  page?: Entry & { title?: string; status?: 'draft' | 'published'; seo?: { seo_title?: string; seo_description?: string; focus_keyword?: string; answer_summary?: string } };
   header?: Entry;
   footer?: Entry;
   template?: Entry;
@@ -68,6 +69,14 @@ export async function saveBuilderDocs(input: SaveInput): Promise<SaveResult> {
         const status = input.page.status ?? page.status;
         const publishedAt = status === 'published' && !page.published_at ? new Date().toISOString().slice(0, 19).replace('T', ' ') : page.published_at;
         run("UPDATE pages SET content = ?, title = ?, status = ?, published_at = ?, updated_at = datetime('now') WHERE id = ?", content, title, status, publishedAt, page.id);
+        if (input.page.seo) {
+          // the four search fields edited in the builder's "SEO & AI" tab (validated like the page settings screen)
+          const s = input.page.seo;
+          const clean = cleanContentSeo({ focus_keyword: s.focus_keyword, answer_summary: s.answer_summary }, { kind: 'page' }).values;
+          run('UPDATE pages SET seo_title = ?, seo_description = ?, focus_keyword = ?, answer_summary = ? WHERE id = ?',
+            String(s.seo_title ?? '').replace(/\u0000/g, '').trim().slice(0, 120), String(s.seo_description ?? '').replace(/\u0000/g, '').trim().slice(0, 320),
+            clean.focus_keyword, clean.answer_summary, page.id);
+        }
         addRevision('page', page.id, title, content, user.id);
         const updated = get<any>('SELECT updated_at FROM pages WHERE id = ?', page.id);
         results.page = { updatedAt: updated.updated_at, dropped, status, nodes: doc.nodes };

@@ -12,6 +12,8 @@ import { fromCanvas, isToCanvas, type DragPayload, type FromCanvas, type Target,
 import { computeDrop, type DropResult } from './dnd';
 import Overlay from './Overlay';
 import RichToolbar from './RichToolbar';
+import type { PopupSettings } from '@/lib/popups-shared';
+import '@/components/site/popup.css';
 import './canvas.css';
 
 type StateMsg = Extract<ToCanvas, { t: 'state' }>;
@@ -40,6 +42,31 @@ function Strip({ index, empty, post }: { index: number; empty: boolean; post: (m
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
         {empty ? ' Add your first section' : ''}
       </button>
+    </div>
+  );
+}
+
+/** While editing a popup the page document is drawn as the popup itself (same box styles as the public popup), on a dimmed stage. */
+function PopupStage({ s, children }: { s: PopupSettings; children: React.ReactNode }) {
+  const bar = s.type === 'bar-top' || s.type === 'bar-bottom';
+  const full = s.type === 'fullscreen';
+  const n = parseInt(s.overlay.slice(1), 16);
+  const ov = `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${s.overlayOpacity / 100})`;
+  const pos = s.type === 'slide-br' ? 'is-br' : s.type === 'slide-bl' ? 'is-bl' : s.type === 'bar-top' ? 'is-top' : s.type === 'bar-bottom' ? 'is-bottom' : 'is-center';
+  const style = {
+    '--pu-ov': ov,
+    '--pu-w': bar || full ? '100%' : s.widthUnit === '%' ? `min(${s.width}%, 100%)` : `min(${s.width}px, 100%)`,
+    '--pu-bg': s.bg,
+    '--pu-r': `${bar || full ? 0 : s.radius}px`,
+    '--pu-shadow': s.shadow === 'none' ? 'none' : s.shadow === 'soft' ? '0 8px 28px rgba(11,18,32,.22)' : '0 24px 70px rgba(11,18,32,.45)',
+  } as React.CSSProperties;
+  return (
+    <div className={`dr-pu-stage ${pos}`} style={style} data-popup-stage>
+      <div className="dr-pu-box" style={{ minHeight: full ? '80vh' : undefined }}>
+        <span className="dr-pu-tag">Popup · {s.type}</span>
+        <span className={`dr-pu-x dr-pu-x--${s.closeStyle} dr-pu-x--${s.closePos}`} aria-hidden="true">{s.closeStyle === 'text' ? 'Close ✕' : '×'}</span>
+        {children}
+      </div>
     </div>
   );
 }
@@ -225,10 +252,13 @@ export default function CanvasApp({ data }: { data: BuilderData }) {
 
   return (
     <div className="dr-edit-root">
-      {(['header', 'page', 'footer'] as Target[]).map((t) => {
-        const nodes = st.docs[t];
-        return nodes ? <Doc key={t} target={t} nodes={nodes} active={st.active === t} ctx={ctxEdit} view={ctxView} post={post} /> : null;
-      })}
+      {(() => {
+        const docs = (['header', 'page', 'footer'] as Target[]).map((t) => {
+          const nodes = st.docs[t];
+          return nodes ? <Doc key={t} target={t} nodes={nodes} active={st.active === t} ctx={ctxEdit} view={ctxView} post={post} /> : null;
+        });
+        return st.popup ? <PopupStage s={st.popup}>{docs}</PopupStage> : docs;
+      })()}
       <Overlay
         selectedId={st.selectedId}
         hoverId={hover}

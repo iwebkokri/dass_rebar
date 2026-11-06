@@ -13,6 +13,10 @@ import { initialState, locate, reducer } from './reducer';
 import Palette from './Palette';
 import Settings from './Settings';
 import Layers from './Layers';
+import SeoPanel, { type SeoFieldsState, type SeoInit } from './SeoPanel';
+import PopupPanel from './PopupPanel';
+import { savePopupSettings } from '@/app/admin/popups/actions';
+import type { PopupSettings } from '@/lib/popups-shared';
 import { type CtlCx, type Lists } from './controls';
 import { I } from './ui';
 import './editor.css';
@@ -35,10 +39,14 @@ export type BuilderInit = {
   saved: Record<string, BNode[]>;
   palette: [string, string][];
   urls: { back: string; view: string; settings: string };
+  /** search + AI fields and site context for the "SEO & AI" tab (pages only) */
+  seo: SeoInit | null;
+  /** popup settings for the "Popup" tab (popups only) */
+  popup: { settings: PopupSettings } | null;
 };
 
 const DEVICE_WIDTH: Record<Device, string> = { d: '100%', t: '820px', m: '390px' };
-type Tab = 'elements' | 'settings' | 'layers' | 'page';
+type Tab = 'elements' | 'settings' | 'layers' | 'page' | 'seo' | 'popup';
 type Toast = { text: string; kind: 'ok' | 'err' | 'warn' } | null;
 
 export default function BuilderShell({ init }: { init: BuilderInit }) {
@@ -59,15 +67,19 @@ export default function BuilderShell({ init }: { init: BuilderInit }) {
   const [library, setLibrary] = useState<{ index: number | null } | null>(null);
   const [naming, setNaming] = useState<{ id: string; name: string } | null>(null);
   const [revs, setRevs] = useState<{ id: number; created_at: string; email: string | null }[] | null>(null);
+  const [seoFields, setSeoFields] = useState<SeoFieldsState | null>(init.seo?.fields ?? null);
+  const [seoDirty, setSeoDirty] = useState(false);
+  const [popup, setPopup] = useState<PopupSettings | null>(init.popup?.settings ?? null);
+  const [popupDirty, setPopupDirty] = useState(false);
 
   const frame = useRef<HTMLIFrameElement>(null);
   const ready = useRef(false);
   const stateRef = useRef(state);
   stateRef.current = state;
-  const miscRef = useRef({ title, titleDirty, status, bases, device, hoverId });
-  miscRef.current = { title, titleDirty, status, bases, device, hoverId };
+  const miscRef = useRef({ title, titleDirty, status, bases, device, hoverId, seoFields, seoDirty, popup, popupDirty });
+  miscRef.current = { title, titleDirty, status, bases, device, hoverId, seoFields, seoDirty, popup, popupDirty };
 
-  const dirty = state.dirty.page || state.dirty.header || state.dirty.footer || titleDirty;
+  const dirty = state.dirty.page || state.dirty.header || state.dirty.footer || titleDirty || seoDirty || popupDirty;
   const activeNodes = state.docs[state.active] || [];
   const selected = state.selectedId ? findNode(activeNodes, state.selectedId) : null;
   const trail = state.selectedId ? pathTo(activeNodes, state.selectedId) : [];
@@ -82,9 +94,9 @@ export default function BuilderShell({ init }: { init: BuilderInit }) {
     const win = frame.current?.contentWindow;
     if (!win || !ready.current) return;
     const s = stateRef.current;
-    win.postMessage(toCanvas({ t: 'state', docs: s.docs, active: s.active, selectedId: s.selectedId, hoverId: miscRef.current.hoverId, path: init.path, device: miscRef.current.device }), location.origin);
+    win.postMessage(toCanvas({ t: 'state', docs: s.docs, active: s.active, selectedId: s.selectedId, hoverId: miscRef.current.hoverId, path: init.path, device: miscRef.current.device, popup: miscRef.current.popup }), location.origin);
   }, [init.path]);
-  useEffect(send, [send, state.docs, state.active, state.selectedId, hoverId, device]);
+  useEffect(send, [send, state.docs, state.active, state.selectedId, hoverId, device, popup]);
 
   const sendDrag = (payload: DragPayload | null) => frame.current?.contentWindow?.postMessage(toCanvas({ t: 'drag', payload }), location.origin);
 
@@ -94,7 +106,7 @@ export default function BuilderShell({ init }: { init: BuilderInit }) {
     const m = miscRef.current;
     const input: SaveInput = { force };
     if (init.kind === 'page') {
-      if (s.dirty.page || m.titleDirty || nextStatus) input.page = { id: init.id, nodes: s.docs.page, base: m.bases.page, title: m.title, status: nextStatus };
+      if (s.dirty.page || m.titleDirty || m.seoDirty || nextStatus) input.page = { id: init.id, nodes: s.docs.page, base: m.bases.page, title: m.title, status: nextStatus, ...(m.seoDirty && m.seoFields ? { seo: m.seoFields } : {}) };
       if (s.dirty.header && init.headerMeta && s.docs.header) input.header = { id: init.headerMeta.id, nodes: s.docs.header, base: m.bases.header };
       if (s.dirty.footer && init.footerMeta && s.docs.footer) input.footer = { id: init.footerMeta.id, nodes: s.docs.footer, base: m.bases.footer };
     } else {
@@ -102,6 +114,13 @@ export default function BuilderShell({ init }: { init: BuilderInit }) {
     }
     if (!input.page && !input.header && !input.footer && !input.template) { flash('Nothing to save.', 'warn'); return; }
     setSaving(true);
+    // popup settings (layout, triggers, rules) are stored separately from the content; they go first so a rejected value stops the save
+    if (init.popup && m.popupDirty && m.popup) {
+      const pr = await savePopupSettings(init.id, m.popup);
+      if (!pr.ok) { setSaving(false); flash(pr.error || 'Could not save the popup settings.', 'err'); return; }
+      if (pr.settings) setPopup(pr.settings);
+      setPopupDirty(false);
+    }
     const res = await saveBuilderDocs(input);
     setSaving(false);
     if (!res.ok) {
@@ -112,7 +131,7 @@ export default function BuilderShell({ init }: { init: BuilderInit }) {
     const r = res.results;
     const targets: Target[] = [];
     const nb = { ...m.bases };
-    if (r.page) { nb.page = r.page.updatedAt; targets.push('page'); if (r.page.status) setStatus(r.page.status); setTitleDirty(false); }
+    if (r.page) { nb.page = r.page.updatedAt; targets.push('page'); if (r.page.status) setStatus(r.page.status); setTitleDirty(false); setSeoDirty(false); }
     if (r.template) { nb.page = r.template.updatedAt; targets.push('page'); }
     if (r.header) { nb.header = r.header.updatedAt; targets.push('header'); }
     if (r.footer) { nb.footer = r.footer.updatedAt; targets.push('footer'); }
@@ -123,7 +142,7 @@ export default function BuilderShell({ init }: { init: BuilderInit }) {
   }, [init, flash]);
 
   useEffect(() => {
-    const onUnload = (e: BeforeUnloadEvent) => { if (stateRef.current.dirty.page || stateRef.current.dirty.header || stateRef.current.dirty.footer || miscRef.current.titleDirty) { e.preventDefault(); e.returnValue = ''; } };
+    const onUnload = (e: BeforeUnloadEvent) => { if (stateRef.current.dirty.page || stateRef.current.dirty.header || stateRef.current.dirty.footer || miscRef.current.titleDirty || miscRef.current.seoDirty || miscRef.current.popupDirty) { e.preventDefault(); e.returnValue = ''; } };
     window.addEventListener('beforeunload', onUnload);
     return () => window.removeEventListener('beforeunload', onUnload);
   }, []);
@@ -173,7 +192,7 @@ export default function BuilderShell({ init }: { init: BuilderInit }) {
       const m = e.data as FromCanvas;
       switch (m.t) {
         case 'ready': ready.current = true; send(); break;
-        case 'select': dispatch({ type: 'select', id: m.id }); if (m.id) setTab((t) => (t === 'layers' || t === 'page' ? t : 'settings')); break;
+        case 'select': dispatch({ type: 'select', id: m.id }); if (m.id) setTab((t) => (t === 'layers' || t === 'page' || t === 'seo' ? t : 'settings')); break;
         case 'switch': if (m.target === 'page' || init.canManageSite) dispatch({ type: 'switch', target: m.target }); break;
         case 'setProp': dispatch({ type: 'setProp', id: m.id, key: m.key, value: m.value }); break;
         case 'setItemProp': dispatch({ type: 'setItemProp', id: m.id, key: m.key, index: m.index, field: m.field, value: m.value }); break;
@@ -225,7 +244,7 @@ export default function BuilderShell({ init }: { init: BuilderInit }) {
     flash('Saved to your library.', 'ok');
   };
 
-  const tabs: [Tab, string, string][] = [['elements', 'Elements', 'grid'], ['settings', 'Settings', 'settings'], ['layers', 'Layers', 'layers'], ['page', init.kind === 'page' ? 'Page' : 'Info', 'history']];
+  const tabs: [Tab, string, string][] = [['elements', 'Elements', 'grid'], ['settings', 'Settings', 'settings'], ['layers', 'Layers', 'layers'], ['page', init.kind === 'page' ? 'Page' : 'Info', 'history'], ...(init.seo && seoFields ? ([['seo', 'SEO & AI', 'globe']] as [Tab, string, string][]) : []), ...(init.popup && popup ? ([['popup', 'Popup', 'settings']] as [Tab, string, string][]) : [])];
   const isPage = init.kind === 'page';
 
   return (
@@ -265,7 +284,7 @@ export default function BuilderShell({ init }: { init: BuilderInit }) {
 
       <div className="be-main">
         <aside className="be-side">
-          <div className="be-sidetabs" role="tablist">
+          <div className="be-sidetabs" role="tablist" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
             {tabs.map(([k, label, icon]) => (
               <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'is-on' : ''} onClick={() => { setTab(k); if (k === 'page' && init.kind) void loadRevs(); }}>
                 <I name={icon} size={16} />
@@ -299,6 +318,18 @@ export default function BuilderShell({ init }: { init: BuilderInit }) {
                 onMove={(id, delta) => dispatch({ type: 'moveBy', id, delta })}
                 onDuplicate={(id) => dispatch({ type: 'duplicate', id })}
                 onRemove={(id) => dispatch({ type: 'remove', id })}
+              />
+            )}
+            {tab === 'popup' && init.popup && popup && <PopupPanel settings={popup} onChange={(n) => { setPopup(n); setPopupDirty(true); }} />}
+            {tab === 'seo' && init.seo && seoFields && (
+              <SeoPanel
+                nodes={state.docs.page}
+                title={title}
+                path={init.path}
+                init={init.seo}
+                fields={seoFields}
+                onField={(key, value) => { setSeoFields((f) => (f ? { ...f, [key]: value } : f)); setSeoDirty(true); }}
+                settingsUrl={init.urls.settings}
               />
             )}
             {tab === 'page' && (
@@ -335,7 +366,7 @@ export default function BuilderShell({ init }: { init: BuilderInit }) {
 
         <div className="be-stage">
           <div className="be-framewrap" style={{ width: DEVICE_WIDTH[device] }} data-device={device}>
-            <iframe ref={frame} src="/builder-frame" title="Page canvas" className="be-frame" onLoad={() => { /* the canvas announces itself with {t:'ready'} */ }} />
+            <iframe ref={frame} src={init.kind === 'page' ? `/builder-frame?p=${init.id}` : '/builder-frame'} title="Page canvas" className="be-frame" onLoad={() => { /* the canvas announces itself with {t:'ready'} */ }} />
           </div>
         </div>
       </div>

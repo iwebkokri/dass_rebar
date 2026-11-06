@@ -1,5 +1,6 @@
 // Validation + storage for the public forms (contact, quote, calculator, newsletter).
 import { all, run } from './db';
+import { hasColumn } from './schema-ready';
 
 export type FormType = 'contact' | 'quote' | 'calculator' | 'newsletter';
 export const FORM_TYPES: FormType[] = ['contact', 'quote', 'calculator', 'newsletter'];
@@ -34,6 +35,11 @@ export type NewSubmission = {
   company: string;
   message: string;
   data: Record<string, unknown>;
+  /** Page the visitor was on ('/quote', '/products?x=1' …) and a label such as "Popup: Newsletter" — filled in by the endpoint. */
+  source_url?: string;
+  source_label?: string;
+  /** utm_* + landing page + referrer from the visitor's first page (validated by cleanAttribution) */
+  attribution?: Record<string, string>;
 };
 
 export type Parsed = { ok: true; row: NewSubmission } | { ok: false; error: string };
@@ -133,37 +139,27 @@ export function parseSubmission(type: string, fd: FormData): Parsed {
 }
 
 export function insertSubmission(row: NewSubmission): number {
-  return run(
-    'INSERT INTO submissions (type, name, email, phone, company, message, data) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    row.type,
-    row.name,
-    row.email,
-    row.phone,
-    row.company,
-    row.message,
-    JSON.stringify(row.data)
-  ).lastInsertRowid;
+  const cols = ['type', 'name', 'email', 'phone', 'company', 'message', 'data'];
+  const vals: Array<string | number> = [row.type, row.name, row.email, row.phone, row.company, row.message, JSON.stringify(row.data)];
+  // Columns added by later migrations are used only when they exist: on a database that has not been migrated yet (a long-running
+  // dev server started before the migration) the lead is still saved — a customer's enquiry must never be lost for that reason.
+  if (hasColumn('submissions', 'source_url') && hasColumn('submissions', 'source_label')) {
+    cols.push('source_url', 'source_label');
+    vals.push((row.source_url || '').slice(0, 300), (row.source_label || '').slice(0, 160));
+  }
+  if (hasColumn('submissions', 'attribution')) {
+    cols.push('attribution');
+    vals.push(JSON.stringify(row.attribution || {}));
+  }
+  return run(`INSERT INTO submissions (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`, ...vals).lastInsertRowid;
 }
 
 export function setAttachments(id: number, attachments: unknown[]) {
   run('UPDATE submissions SET attachments = ? WHERE id = ?', JSON.stringify(attachments), id);
 }
 
-/** Plain-text summary used for the notification email. */
-export function describe(row: NewSubmission, id: number, attachmentCount: number, origin: string): string {
-  const lines = [`New ${row.type} submission #${id}`, ''];
-  if (row.name) lines.push(`Name:    ${row.name}`);
-  if (row.company) lines.push(`Company: ${row.company}`);
-  if (row.email) lines.push(`Email:   ${row.email}`);
-  if (row.phone) lines.push(`Phone:   ${row.phone}`);
-  if (row.message) lines.push('', row.message);
-  const d = row.data as any;
-  if (row.type === 'quote') {
-    lines.push('', `Project location: ${d.project_location}`, `Sector: ${d.sector}  |  Need: ${d.need}  |  Existing customer: ${d.existing_customer}`);
-    if (d.items?.length) lines.push('', 'Materials:', ...d.items.map((i: any) => `  - ${i.label} × ${i.qty}`));
-    if (d.other_items) lines.push('', `Other items: ${d.other_items}`);
-  }
-  if (attachmentCount) lines.push('', `${attachmentCount} attachment(s) — open the submission in the Studio CMS to download.`);
-  lines.push('', `${origin}/admin/submissions/${id}`);
-  return lines.join('\n');
+/** The page a form was submitted from: a same-site path only ('/quote', '/products?x=1'), never an absolute URL. */
+export function cleanSourcePath(v: unknown): string {
+  const s = String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim();
+  return /^\/(?!\/)[^\s<>"'\\]*$/.test(s) ? s.slice(0, 300) : '';
 }

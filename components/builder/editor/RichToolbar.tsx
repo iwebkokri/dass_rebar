@@ -21,7 +21,9 @@ export default function RichToolbar() {
       if (!sel || sel.rangeCount === 0 || sel.isCollapsed || !inRich(sel.anchorNode)) { setPos(null); return; }
       const r = sel.getRangeAt(0).getBoundingClientRect();
       if (!r.width && !r.height) { setPos(null); return; }
-      setPos({ x: Math.max(8, Math.min(r.left + r.width / 2, document.documentElement.clientWidth - 150)), y: r.top + window.scrollY });
+      // the bar is centred on x (translateX(-50%)) and about 380px wide: keep BOTH edges inside the canvas (it used to slide off the left edge)
+      const half = 200;
+      setPos({ x: Math.max(half, Math.min(r.left + r.width / 2, document.documentElement.clientWidth - half)), y: r.top + window.scrollY });
     };
     document.addEventListener('selectionchange', update);
     window.addEventListener('scroll', update, { passive: true });

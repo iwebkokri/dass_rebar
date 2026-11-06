@@ -1,0 +1,30 @@
+/* Studio CMS — Email page (prefix em-) */
+.em-form { max-width: 980px; }
+.em-callout { border-left: 3px solid #b0a18e; }
+.em-points { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 6px; color: var(--sc-muted); }
+.em-points strong { color: var(--sc-text, #fff); }
+.em-note { grid-column: 1 / -1; margin: -4px 0 0; }
+.em-status { margin-bottom: 16px; }
+.em-status .sc-rowlink { margin-left: 6px; }
+.em-test { max-width: 980px; margin-top: 18px; }
+.em-testform { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.em-color { width: 64px; height: 38px; padding: 2px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--sc-border); border-radius: 8px; cursor: pointer; }
+
+.em-design { display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.em-designform { position: sticky; top: 16px; }
+.em-designform .is-wide { grid-column: 1 / -1; }
+.em-previewcol { min-width: 0; }
+.em-preview { border: 1px solid var(--sc-border); border-radius: 12px; overflow: hidden; background: #0e1118; }
+.em-preview-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--sc-border); }
+.em-preview-stage { display: flex; justify-content: center; padding: 16px 8px; overflow: auto; background: #cfd3da; }
+.em-preview-frame { height: 1080px; border: 0; background: #eef0f3; border-radius: 6px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25); }
+
+.em-log td { vertical-align: top; }
+.em-err { margin-top: 4px; max-width: 420px; font-size: 12px; color: var(--sc-danger, #ff8a8a); word-break: break-word; }
+.em-log form { margin: 0; }
+
+@media (max-width: 1100px) {
+  .em-design { grid-template-columns: minmax(0, 1fr); }
+  .em-designform { position: static; }
+}
+.em-resp { max-width: 340px; font-size: 12px; color: var(--sc-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; }

@@ -1,11 +1,12 @@
 // Custom forms (server side): loading definitions, usage scan, and validating a public submission against its definition.
 import type { FormDef, FormField } from './builder/types';
 import { all, get } from './db';
-import { EMAIL, splitEmails, type FormSettings } from './forms-shared';
+import { EMAIL, OPTION_TYPES, type FormSettings } from './forms-shared';
 import { MAX_ATTACHMENTS, UploadError, checkAttachment } from './uploads';
 import type { NewSubmission } from './submissions';
 
-export type StoredForm = FormDef & { settings: FormSettings; created_at?: string; updated_at?: string };
+/** A stored form: the public part (FormDef) plus the owner-only settings (recipients, auto-reply). Never hand this to the browser. */
+export type StoredForm = Omit<FormDef, 'settings'> & { settings: FormSettings; created_at?: string; updated_at?: string };
 
 const json = <T>(s: string, fallback: T): T => {
   try {
@@ -22,6 +23,11 @@ function hydrate(r: any): StoredForm {
 
 export function getForm(id: number): StoredForm | undefined {
   const r = get<any>('SELECT * FROM forms WHERE id = ?', id);
+  return r ? hydrate(r) : undefined;
+}
+
+export function getFormBySlug(slug: string): StoredForm | undefined {
+  const r = get<any>('SELECT * FROM forms WHERE slug = ?', slug);
   return r ? hydrate(r) : undefined;
 }
 
@@ -43,9 +49,11 @@ export function submissionCounts(): Record<string, number> {
   return out;
 }
 
-/** Pages / templates (name + admin link) whose content embeds this form with the Custom form widget. */
-export function formUsage(formId: number): Array<{ kind: 'page' | 'template'; id: number; title: string }> {
-  const out: Array<{ kind: 'page' | 'template'; id: number; title: string }> = [];
+export type FormUse = { kind: 'page' | 'template' | 'popup'; id: number; title: string };
+
+/** Pages, templates (header / footer / saved sections) and popups whose content embeds this form with the Custom form widget. */
+export function formUsage(formId: number): FormUse[] {
+  const out: FormUse[] = [];
   const needle = `"formId"`;
   const uses = (content: string): boolean => {
     if (!content.includes(needle)) return false;
@@ -56,15 +64,15 @@ export function formUsage(formId: number): Array<{ kind: 'page' | 'template'; id
   for (const p of all<{ id: number; title: string; content: string }>("SELECT id, title, content FROM pages WHERE status <> 'trash' AND content LIKE '%formId%'")) {
     if (uses(p.content)) out.push({ kind: 'page', id: p.id, title: p.title });
   }
-  for (const t of all<{ id: number; name: string; content: string }>("SELECT id, name, content FROM templates WHERE content LIKE '%formId%'")) {
-    if (uses(t.content)) out.push({ kind: 'template', id: t.id, title: t.name });
+  for (const t of all<{ id: number; name: string; kind: string; content: string }>("SELECT id, name, kind, content FROM templates WHERE content LIKE '%formId%'")) {
+    if (uses(t.content)) out.push({ kind: t.kind === 'popup' ? 'popup' : 'template', id: t.id, title: t.name });
   }
   return out;
 }
 
 // ---------------------------------------------------------------- validating a public submission
 export type CustomParsed =
-  | { ok: true; row: NewSubmission; files: Array<{ file: File; label: string }>; recipients: string[] }
+  | { ok: true; row: NewSubmission; files: Array<{ file: File; label: string }> }
   | { ok: false; error: string };
 
 const clip = (v: unknown, max: number) => String(v ?? '').replace(/\u0000/g, '').trim().slice(0, max);
@@ -104,13 +112,34 @@ export function parseCustomForm(def: StoredForm, fd: FormData): CustomParsed {
         break;
       }
 
-      case 'checkbox': {
+      case 'checkbox':
+      case 'consent': {
         const on = /^(on|true|1|yes)$/i.test(clip(fd.get(f.id), 8));
         if (f.required && !on) {
           missing.push(f.label);
           break;
         }
         data[key] = on ? 'Yes' : 'No';
+        break;
+      }
+
+      case 'hidden': {
+        // The browser can't change it: the value always comes from the form's definition.
+        if (f.value) data[key] = f.value.slice(0, 500);
+        break;
+      }
+
+      case 'checkboxes': {
+        const options = f.options || [];
+        const picked = fd.getAll(f.id).map((v) => clip(v, 120)).filter(Boolean);
+        const bad = picked.find((v) => !options.includes(v));
+        if (bad) return { ok: false, error: `“${f.label}”: please choose from the listed options.` };
+        const chosen = options.filter((o) => picked.includes(o));
+        if (!chosen.length) {
+          if (f.required) missing.push(f.label);
+          break;
+        }
+        data[key] = chosen.join(', ');
         break;
       }
 
@@ -133,7 +162,7 @@ export function parseCustomForm(def: StoredForm, fd: FormData): CustomParsed {
           const d = new Date(`${v}T00:00:00Z`);
           if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v) return { ok: false, error: `“${f.label}”: please enter a valid date.` };
         }
-        if (f.type === 'select' && !(f.options || []).includes(v)) return { ok: false, error: `“${f.label}”: please choose one of the listed options.` };
+        if (OPTION_TYPES.includes(f.type) && !(f.options || []).includes(v)) return { ok: false, error: `“${f.label}”: please choose one of the listed options.` };
         data[key] = v;
         byField.set(f.id, v);
       }
@@ -149,26 +178,17 @@ export function parseCustomForm(def: StoredForm, fd: FormData): CustomParsed {
   const last = text((f) => isNameField(f) && /last|sur|family/i.test(f.label));
   const name = first && last ? `${first} ${last}` : text((f) => isNameField(f) && /full|^\s*(your\s+)?name\s*$/i.test(f.label)) || text(isNameField) || first || last;
 
+  // An answer the editor explicitly mapped ("Use as the customer's …") always wins over the guesses from field type / label.
+  const mapped = (role: NonNullable<FormField['map']>) => text((f) => f.map === role);
   const row: NewSubmission = {
     type: formType(def.slug),
-    name: name.slice(0, 160),
-    email: text((f) => f.type === 'email'),
-    phone: text((f) => f.type === 'tel'),
-    company: text((f) => f.type === 'text' && /company|business|organi[sz]ation/i.test(f.label)).slice(0, 160),
-    message: text((f) => f.type === 'textarea'),
+    name: (mapped('name') || name).slice(0, 160),
+    // the email field marked "contact" wins; otherwise the first one that was filled in
+    email: mapped('email') || text((f) => f.type === 'email' && !!f.contact) || text((f) => f.type === 'email'),
+    phone: (mapped('phone') || text((f) => f.type === 'tel')).slice(0, 40),
+    company: (mapped('company') || text((f) => f.type === 'text' && /company|business|organi[sz]ation/i.test(f.label))).slice(0, 160),
+    message: mapped('message') || text((f) => f.type === 'textarea'),
     data,
   };
-  return { ok: true, row, files, recipients: splitEmails(def.settings.notifyEmails || '') };
-}
-
-/** Plain-text email body for a custom-form submission. */
-export function describeCustom(def: StoredForm, row: NewSubmission, id: number, attachmentCount: number, origin: string): string {
-  const lines = [`New "${def.name}" submission #${id}`, ''];
-  for (const [k, v] of Object.entries(row.data)) {
-    const s = String(v);
-    lines.push(s.includes('\n') ? `${k}:\n${s}\n` : `${k}: ${s}`);
-  }
-  if (attachmentCount) lines.push('', `${attachmentCount} attachment(s) — open the submission in the Studio CMS to download.`);
-  lines.push('', `${origin}/admin/submissions/${id}`);
-  return lines.join('\n');
+  return { ok: true, row, files };
 }

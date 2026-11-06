@@ -11,6 +11,9 @@ export default {
   title: 'Insights',
   seoTitle: 'Insights',
   seoDescription: 'Practical guides on rebar estimating, detailing, procurement and quality control in Ontario.',
+  // Search + AI fields: the direct answer is what answer engines and AI assistants quote (40-60 words); see docs/SEO-AND-TRACKING.md
+  focusKeyword: 'rebar guides Ontario',
+  answerSummary: "Insights is Dass Rebar's collection of practical guides on rebar estimating, detailing, procurement and quality control in Ontario. The articles are written for contractors, detailers and estimators who need clear, practical answers about reinforcing steel, from choosing bar sizes to specifying, ordering and checking material on site.",
   content: [
     // ---- page hero ----
     band(

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import '@/app/admin/css/posts.css';
+import '@/app/admin/css/seo.css';
 import { postsAction, restoreRevision, savePost } from '@/app/admin/posts/actions';
 import ConfirmButton from '@/components/admin/ConfirmButton';
 import Flash, { type FlashParams } from '@/components/admin/Flash';
@@ -9,12 +10,15 @@ import PostBodyEditor from '@/components/admin/PostBodyEditor';
 import PostPublishBox from '@/components/admin/PostPublishBox';
 import PostTermsBox from '@/components/admin/PostTermsBox';
 import PostTitleFields from '@/components/admin/PostTitleFields';
+import SeoFields from '@/components/admin/SeoFields';
+import SeoReport from '@/components/admin/SeoReport';
 import type { AdminUser } from '@/lib/auth';
 import { all, get } from '@/lib/db';
 import { stamp } from '@/lib/format';
 import { nowStamp, stampToLocalInput } from '@/lib/post-time';
 import { allTerms, canEditPost, listRevisions, postState, termsOfPost, type PostRow } from '@/lib/posts';
 import { can } from '@/lib/roles';
+import { analyzePost } from '@/lib/seo';
 
 /** Add-new / edit screen of a post. The page itself has already called requireCap('edit_posts'). */
 export default async function PostEditor({ idParam, user, flash }: { idParam: string; user: AdminUser; flash: FlashParams }) {
@@ -34,6 +38,8 @@ export default async function PostEditor({ idParam, user, flash }: { idParam: st
   const canOthers = can(user, 'edit_others_posts');
   const authors = canOthers ? all<{ id: number; name: string; email: string }>('SELECT id, name, email FROM users ORDER BY name COLLATE NOCASE, email') : [];
   const revisions = row ? listRevisions(row.id) : [];
+  const authorName = row?.author_id ? get<{ n: string }>("SELECT COALESCE(NULLIF(name, ''), email) AS n FROM users WHERE id = ?", row.author_id)?.n ?? '' : '';
+  const analysis = row && !trashed ? analyzePost(row, authorName) : null;
 
   const viewUrl = row ? (row.external_url ? row.external_url : state === 'published' ? `/insights/${row.slug}` : `/insights/${row.slug}?preview=1`) : '';
   const back = row ? `/admin/posts/${row.id}` : '/admin/posts';
@@ -102,6 +108,16 @@ export default async function PostEditor({ idParam, user, flash }: { idParam: st
                 <MediaField name="og_image" defaultValue={row?.og_image ?? ''} kind="image" label="Social image" help="Shown when the link is shared. Defaults to the cover image." />
               </div>
             </div>
+
+            <SeoFields
+              kind="post"
+              canJsonLd={can(user, 'manage_seo')}
+              values={{
+                focus_keyword: row?.focus_keyword ?? '', canonical_url: row?.canonical_url ?? '', nofollow: row?.nofollow ?? 0, noindex: row?.noindex ?? 0,
+                og_title: row?.og_title ?? '', og_description: row?.og_description ?? '', twitter_card: row?.twitter_card ?? '', schema_type: row?.schema_type ?? '',
+                answer_summary: row?.answer_summary ?? '', breadcrumb_title: row?.breadcrumb_title ?? '', custom_jsonld: row?.custom_jsonld ?? '',
+              }}
+            />
           </div>
 
           <aside className="po-side">
@@ -126,6 +142,14 @@ export default async function PostEditor({ idParam, user, flash }: { idParam: st
               tagSuggestions={tagSuggestions}
               canAddCategory={can(user, 'manage_terms')}
             />
+
+            {analysis && (
+              <section className="sc-card po-box" id="seo-report">
+                <h2>SEO &amp; AI check</h2>
+                <SeoReport result={analysis} />
+                <p className="sc-help" style={{ marginBottom: 0 }}>Based on the last saved version.</p>
+              </section>
+            )}
 
             <section className="sc-card po-box">
               <h2>Cover image</h2>

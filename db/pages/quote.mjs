@@ -9,6 +9,9 @@ export default {
   title: 'Request a Quote',
   seoTitle: 'Request a Quote',
   seoDescription: 'Request a rebar quote in four quick steps — attach drawings or list the material you need.',
+  // Search + AI fields: the direct answer is what answer engines and AI assistants quote (40-60 words); see docs/SEO-AND-TRACKING.md
+  focusKeyword: 'rebar quote Ontario',
+  answerSummary: 'Request a rebar quote from Dass Rebar in four short steps: tell us about your project, list the material you need or attach your drawings, add your contact details, and submit. Our team reviews the request and replies with pricing for cut-and-bent rebar, mesh and other reinforcing steel.',
   content: [
     // ---- hero (photo + navy gradient) ----
     section(

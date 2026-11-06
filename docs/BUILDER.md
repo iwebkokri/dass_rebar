@@ -44,11 +44,13 @@ The public site is the catch-all route app/(site)/[[...slug]]/page.tsx -> PageSh
 
 ## 4. Seeding page content as code
 Seed files are auto-discovered by `scripts/seed.mjs`:
-* `db/pages/<name>.mjs` — default export `{ path, title, seoTitle?, seoDescription?, layout?, content: Node[] }` (`path` '' = home).
+* `db/pages/<name>.mjs` — default export `{ path, title, seoTitle?, seoDescription?, focusKeyword?, answerSummary?, layout?, content: Node[] }` (`path` '' = home).
+  `answerSummary` is the 40–60 word direct answer used for structured data / llms.txt (see docs/SEO-AND-TRACKING.md).
 * `db/templates/<name>.mjs` — default export array of `{ kind: 'header'|'footer'|'section'|'page', name, content }`.
 * `db/menus/<name>.mjs` — default export array of `{ slug, name, items }`; item = `{ label, url, description?, cta?, dark?, sepBefore?, children? }`.
 
 `npm run seed -- --only=<file name without .mjs>[,<more>]` rewrites ONLY those definitions (use this; never `--reset-pages` — it rewrites everyone's).
+`npm run seed -- --seo-fields` is the safe one for a live site: it fills an EMPTY focus keyword / answer summary on existing pages and changes nothing else (content included).
 The seed script validates through `sanitizeDoc`, which silently drops invalid props — always check the rendered result.
 
 ## 5. Roles & permissions
@@ -64,7 +66,7 @@ Dark "Studio CMS" UI, classes prefixed `sc-` in `app/admin/admin.css` (`sc-head`
 — see `components/admin/Flash.tsx`, `app/admin/actions.ts`, `lib/admin/resources.ts`, `components/admin/Field.tsx` for the existing patterns).
 Client-only UI pieces go in `components/admin/<Area>*.tsx`. Put area-specific CSS in `app/admin/css/<area>.css` and import it from your pages
 (don't grow admin.css). Log notable changes with `logActivity(user, 'action', 'entity', id, 'summary')` from `lib/activity.ts`.
-DB: `lib/db.ts` (`all / get / run / transaction`). The schema is in `lib/db-core.mjs` (MIGRATIONS 1-2 are done and shared). If you truly need a schema change,
+DB: `lib/db.ts` (`all / get / run / transaction`). The schema is in `lib/db-core.mjs` (MIGRATIONS 1-2 are done and shared; 3 = SEO / AI fields + 404 log, 4 = emailer + popups; a migration may be a function that checks what exists first — see 3). If you truly need a schema change,
 APPEND a new migration (never edit 1-2) and keep it minimal; prefer `settings` rows (`getSetting / setSetting`) over new tables.
 Never put unescaped user text into HTML; never `dangerouslySetInnerHTML` user text.
 
@@ -95,3 +97,13 @@ Type-check: `npx tsc --noEmit -p .`. Screenshots / behaviour: playwright-core + 
 * **Colours** — `getSetting('design_palette')` is JSON `[["#182845","Navy"],...]` (settings agent); the builder falls back to `PALETTE` in schema.mjs.
 * **Site settings** keys (settings agent): `site_title`, `site_tagline`, `site_logo`, `site_favicon`, `seo_default_description`, `seo_default_og_image`, `contact_phone`, `contact_email`, `contact_address`, `design_palette`.
 * **Page saves** from the builder go through `app/admin/builder/actions.ts` (builder owner). The pages admin only edits page *settings* (title, path, status, layout, SEO) — never the content tree.
+  The builder's "SEO & AI" tab edits four page fields (`seo_title`, `seo_description`, `focus_keyword`, `answer_summary`) and saves them with the page (`SaveInput.page.seo`, validated with `cleanContentSeo`);
+  conflict detection is unchanged (it still compares `pages.updated_at`).
+* **Accordion** (`accordion` widget) has a switch prop `faqSchema` ("Add FAQ structured data"). Accordions with it ON are turned into one `FAQPage` JSON-LD object on the public page
+  (answers as plain text, duplicates removed). Nothing else about rendering changed.
+* **Page columns added by migration 3** (all `TEXT NOT NULL DEFAULT ''` unless noted): `focus_keyword, canonical_url, nofollow INTEGER, og_title, og_description, twitter_card, schema_type,
+  answer_summary, breadcrumb_title, custom_jsonld` (also on `posts`, plus `posts.noindex`), and, on `pages` only, the administrator-only `code_css, code_head, code_footer`.
+  `pages.noindex` remains THE "hide from search engines" flag. Editors may edit all of these except `custom_jsonld` (`manage_seo`) and the `code_*` columns (`manage_code`) — enforced in the server actions.
+* **Roles**: new capabilities `manage_seo` (site-wide SEO / AI settings, llms.txt, robots, 404 monitor) and `manage_code` (tracking IDs, custom CSS / JS / HTML) — administrators only.
+* **Public head / body code** comes from the root layout (`components/site/SiteCode.tsx`) and `proxy.ts` (it tells the layout whether a request is the public site, /admin or the builder canvas). Never add
+  tracking or custom code anywhere else.

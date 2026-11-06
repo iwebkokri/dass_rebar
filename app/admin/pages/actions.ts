@@ -7,6 +7,8 @@ import { redirect } from 'next/navigation';
 import { logActivity } from '@/lib/activity';
 import { requireCap } from '@/lib/auth';
 import { sanitizeDoc } from '@/lib/builder/sanitize.mjs';
+import { cleanCss, cleanRawHtml } from '@/lib/html-snippet.mjs';
+import { cleanContentSeo, cleanCustomJsonLd } from '@/lib/seo-core.mjs';
 import { cloneNode, parseDoc } from '@/lib/builder/tree.mjs';
 import { safeMediaUrl } from '@/lib/builder/url.mjs';
 import { get, run, transaction } from '@/lib/db';
@@ -152,10 +154,36 @@ export async function savePageSettings(fd: FormData) {
     else publishedAt = sched; // kept for when it is published; empty means "publish immediately"
   }
 
+  // search + AI fields (editors may change these); custom JSON-LD and page code need their own capability, checked on the server
+  const seo = cleanContentSeo({
+    focus_keyword: fd.get('focus_keyword'), canonical_url: fd.get('canonical_url'), nofollow: fd.get('nofollow'), og_title: fd.get('og_title'),
+    og_description: fd.get('og_description'), twitter_card: fd.get('twitter_card'), schema_type: fd.get('schema_type'),
+    answer_summary: fd.get('answer_summary'), breadcrumb_title: fd.get('breadcrumb_title'),
+  }, { kind: 'page' });
+  if (seo.error) go(here, { error: seo.error });
+  const extra: Record<string, string> = {};
+  if (can(user, 'manage_seo') && fd.has('custom_jsonld')) {
+    const j = cleanCustomJsonLd(String(fd.get('custom_jsonld') ?? ''));
+    if (j.error) go(here, { error: j.error });
+    extra.custom_jsonld = j.value;
+  }
+  if (can(user, 'manage_code') && fd.has('code_css')) {
+    extra.code_css = cleanCss(String(fd.get('code_css') ?? ''));
+    extra.code_head = cleanRawHtml(String(fd.get('code_head') ?? ''));
+    extra.code_footer = cleanRawHtml(String(fd.get('code_footer') ?? ''));
+  }
+  const extraCols = Object.keys(extra);
+
   transaction(() => {
     run(
-      `UPDATE pages SET title = ?, path = ?, layout = ?, noindex = ?, seo_title = ?, seo_description = ?, og_image = ?, status = ?, published_at = ?, updated_at = datetime('now') WHERE id = ?`,
-      title, path, layout, noindex, seoTitle, seoDescription, og, status, publishedAt, id
+      `UPDATE pages SET title = ?, path = ?, layout = ?, noindex = ?, seo_title = ?, seo_description = ?, og_image = ?, status = ?, published_at = ?,
+         focus_keyword = ?, canonical_url = ?, nofollow = ?, og_title = ?, og_description = ?, twitter_card = ?, schema_type = ?, answer_summary = ?, breadcrumb_title = ?
+         ${extraCols.map((c) => `, ${c} = ?`).join('')}, updated_at = datetime('now') WHERE id = ?`,
+      title, path, layout, noindex, seoTitle, seoDescription, og, status, publishedAt,
+      seo.values.focus_keyword, seo.values.canonical_url, seo.values.nofollow, seo.values.og_title, seo.values.og_description, seo.values.twitter_card,
+      seo.values.schema_type, seo.values.answer_summary, seo.values.breadcrumb_title,
+      ...extraCols.map((c) => extra[c]),
+      id
     );
     if (path !== p.path && p.path !== '' && fd.get('redirect_old') === 'on') {
       run('DELETE FROM redirects WHERE from_path = ?', '/' + path); // a stale redirect away from the new path would loop

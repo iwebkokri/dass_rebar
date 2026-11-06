@@ -77,6 +77,9 @@ export default {
   title: 'Services',
   seoTitle: 'Services',
   seoDescription: 'Fabrication, estimating, detailing, project management, delivery and assembly — all in-house.',
+  // Search + AI fields: the direct answer is what answer engines and AI assistants quote (40-60 words); see docs/SEO-AND-TRACKING.md
+  focusKeyword: 'rebar fabrication Ontario',
+  answerSummary: 'Dass Rebar provides rebar fabrication, estimating, detailing, project management, delivery and assembly, all in-house. Estimating and detailing come first, then cutting and bending to schedule, delivery to site across the GTA and Ontario, and assembly where needed, so one supplier can look after reinforcing steel from the first quote to the last delivery.',
   content: [
     hero({
       image: '/images/p-worker.jpg', crumbs: [['HOME', '/'], ['SERVICES']],

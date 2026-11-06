@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { pagesAction } from '@/app/admin/pages/actions';
+import { band } from '@/lib/builder/seo-analysis.mjs';
 
 export type PagesListRow = {
   id: number;
@@ -18,6 +19,9 @@ export type PagesListRow = {
   author: string;
   updated: string;
   viewHref: string;
+  /** SEO / AI-readiness scores 0–100 (null for trashed pages) */
+  seo: number | null;
+  ai: number | null;
 };
 
 type Props = {
@@ -78,6 +82,8 @@ export default function PagesList({ rows, tab, back, canBuild, canPublish, canDe
               <th>Title</th>
               <th>Path</th>
               <th>Status</th>
+              <th title="Search-engine score">SEO</th>
+              <th title="AI-readiness score (GEO / AEO / AIO)">AI</th>
               <th>Layout</th>
               <th>Author</th>
               <th>Last updated</th>
@@ -116,6 +122,8 @@ export default function PagesList({ rows, tab, back, canBuild, canPublish, canDe
                     {r.noindex && <span className="pg-sub">noindex</span>}
                     {r.state === 'scheduled' && <span className="pg-sub">{r.stateNote}</span>}
                   </td>
+                  <td>{r.seo === null ? <span className="sc-faint">—</span> : <span className="se-score-cell" data-band={band(r.seo)} aria-label={`SEO score ${r.seo} out of 100`}>{r.seo}</span>}</td>
+                  <td>{r.ai === null ? <span className="sc-faint">—</span> : <span className="se-score-cell" data-band={band(r.ai)} aria-label={`AI-readiness score ${r.ai} out of 100`}>{r.ai}</span>}</td>
                   <td className="sc-muted">{r.layout === 'canvas' ? 'Canvas' : 'Default'}</td>
                   <td className="sc-muted">{r.author || '—'}</td>
                   <td className="sc-muted">{r.updated}</td>

@@ -78,3 +78,14 @@ html.dr-editing, html.dr-editing body { background: #fff; }
 .dr-rtb-link { display: flex; gap: 4px; }
 .dr-rtb-link input { width: 240px; height: 28px; padding: 0 8px; border-radius: 5px; border: 1px solid #374151; background: #1f2937; color: #fff; font: inherit; }
 .dr-rtb-link button { background: #3d7dff; }
+
+/* popup canvas: the popup drawn on a dimmed stage (the real popup uses components/site/popup.css) */
+.dr-pu-stage { min-height: 100vh; box-sizing: border-box; padding: 40px 16px 120px; display: flex; background: var(--pu-ov, rgba(11, 18, 32, 0.6)); background-color: #cfd3da; background-image: linear-gradient(var(--pu-ov, rgba(11, 18, 32, 0.6)), var(--pu-ov, rgba(11, 18, 32, 0.6))); }
+.dr-pu-stage.is-center { align-items: flex-start; justify-content: center; }
+.dr-pu-stage.is-br { align-items: flex-end; justify-content: flex-end; }
+.dr-pu-stage.is-bl { align-items: flex-end; justify-content: flex-start; }
+.dr-pu-stage.is-top { align-items: flex-start; justify-content: stretch; padding-top: 0; }
+.dr-pu-stage.is-bottom { align-items: flex-end; justify-content: stretch; padding-bottom: 0; }
+.dr-pu-stage .dr-pu-box { max-height: none; overflow: visible; animation: none; }
+.dr-pu-stage .dr-pu-x { pointer-events: none; }
+.dr-pu-tag { position: absolute; top: -26px; left: 0; font: 600 11px/1 var(--font-inter), Arial, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: #fff; background: #182845; padding: 5px 9px; border-radius: 6px 6px 0 0; pointer-events: none; }

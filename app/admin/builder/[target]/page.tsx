@@ -9,6 +9,10 @@ import { getPageById, getActiveTemplate, getTemplateById, pageDoc } from '@/lib/
 import { PALETTE } from '@/lib/builder/schema.mjs';
 import { parseDoc } from '@/lib/builder/tree.mjs';
 import { parsePalette } from '@/lib/palette';
+import { getSeo, siteForAnalysis } from '@/lib/seo';
+import { listPopups, popupsReady } from '@/lib/popups';
+import { normalisePopupSettings } from '@/lib/popups-shared';
+import { NOT_READY_MESSAGE } from '@/lib/schema-ready';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Page builder' };
@@ -22,6 +26,7 @@ export default async function BuilderPage({ params }: { params: Promise<{ target
   const id = Number(m[2]);
 
   let init: Omit<BuilderInit, 'lists' | 'saved' | 'palette' | 'isAdmin' | 'canPublish' | 'canManageSite'>;
+  const seoSettings = getSeo();
   if (m[1] === 'page') {
     const page = getPageById(id);
     if (!page || page.status === 'trash') notFound();
@@ -36,17 +41,28 @@ export default async function BuilderPage({ params }: { params: Promise<{ target
       headerMeta: header ? { id: header.id, base: header.base } : null,
       footerMeta: footer ? { id: footer.id, base: footer.base } : null,
       urls: { back: '/admin/pages', view: `/${page.path}`, settings: `/admin/pages/${page.id}` },
+      popup: null,
+      seo: {
+        fields: { seo_title: page.seo_title, seo_description: page.seo_description, focus_keyword: page.focus_keyword, answer_summary: page.answer_summary },
+        context: { canonical_url: page.canonical_url, noindex: page.noindex, nofollow: page.nofollow, og_image: page.og_image, schema_type: page.schema_type, breadcrumb_title: page.breadcrumb_title, og_title: page.og_title, custom_jsonld: page.custom_jsonld },
+        site: siteForAnalysis(seoSettings),
+      },
     };
   } else {
     const tpl = getTemplateById(id);
     if (!tpl) notFound();
     const live = tpl.kind === 'header' || tpl.kind === 'footer';
-    if (!can(user, live ? 'manage_site' : 'edit_pages')) redirect('/admin?error=forbidden');
+    const isPopup = tpl.kind === 'popup';
+    if (isPopup && !popupsReady()) redirect(`/admin/popups?error=${encodeURIComponent(NOT_READY_MESSAGE)}`); // a server that hasn't run the migration yet
+    if (!can(user, isPopup ? 'manage_forms' : live ? 'manage_site' : 'edit_pages')) redirect('/admin?error=forbidden');
+    const popupRow = isPopup ? listPopups().find((p) => p.id === id) : undefined;
     init = {
       kind: 'template', id, title: tpl.name, status: tpl.kind, path: '', templateKind: tpl.kind, base: tpl.updated_at,
       docs: { page: parseDoc(tpl.content).nodes, header: null, footer: null },
       headerMeta: null, footerMeta: null,
-      urls: { back: '/admin/templates', view: '/', settings: '/admin/templates' },
+      urls: isPopup ? { back: '/admin/popups', view: `/?popup-preview=${id}`, settings: '/admin/popups' } : { back: '/admin/templates', view: '/', settings: '/admin/templates' },
+      popup: popupRow ? { settings: popupRow.settings } : isPopup ? { settings: normalisePopupSettings({}, tpl.name) } : null,
+      seo: null,
     };
   }
 
@@ -64,6 +80,7 @@ export default async function BuilderPage({ params }: { params: Promise<{ target
       forms: all<{ id: number; name: string }>('SELECT id, name FROM forms ORDER BY name'),
       categories: all<{ slug: string; name: string }>("SELECT slug, name FROM terms WHERE taxonomy = 'category' ORDER BY name"),
       sections: sections.map((s) => ({ id: s.id, name: s.name })),
+      popups: listPopups().filter((p) => !p.settings.trashed && p.settings.slug).map((p) => ({ slug: p.settings.slug, name: p.name })),
     },
   };
   return <BuilderShell init={full} />;

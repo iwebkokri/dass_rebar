@@ -157,7 +157,8 @@ select.dr-input { appearance: auto; }
 .dr-error { margin: 0; color: #B3261E; font-size: 15px; font-weight: 600; }
 .dr-check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; line-height: 1.4; min-height: 28px; }
 .dr-check input { width: 20px; height: 20px; flex: none; margin: 1px 0 0; accent-color: #7F5F47; }
-.dr-radios { display: flex; gap: 24px; }
+.dr-radios { display: flex; flex-wrap: wrap; gap: 0 24px; }
+.dr-fld-help { display: block; margin-top: 6px; font-size: 13px; line-height: 1.4; color: #5a6677; }
 .dr-radio { display: flex; gap: 10px; align-items: center; font-size: 16px; min-height: 44px; }
 .dr-radio input { width: 20px; height: 20px; accent-color: #7F5F47; }
 .dr-legend { padding: 0; margin-bottom: 10px; }

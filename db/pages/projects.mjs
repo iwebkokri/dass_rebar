@@ -7,6 +7,9 @@ export default {
   title: 'Projects',
   seoTitle: 'Projects',
   seoDescription: 'Residential, ICI and infrastructure projects across Ontario reinforced with Dass Rebar steel.',
+  // Search + AI fields: the direct answer is what answer engines and AI assistants quote (40-60 words); see docs/SEO-AND-TRACKING.md
+  focusKeyword: 'rebar projects Ontario',
+  answerSummary: 'Dass Rebar has supplied reinforcing steel to residential, ICI and infrastructure projects across Ontario. The projects page showcases featured work with locations and photos, alongside a wider roster of other jobs, so developers and contractors can see the kind of buildings and civil works our fabricated rebar goes into.',
   content: [
     hero({
       image: '/images/haw-1.jpg',

@@ -5,6 +5,7 @@ import PostArticle from '@/components/PostArticle';
 import { getCurrentUser } from '@/lib/auth';
 import { getPostBySlug } from '@/lib/content';
 import { can } from '@/lib/roles';
+import { postJsonLd, postMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,15 +28,9 @@ async function load(slug: string, wantsPreview: boolean) {
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const found = await load((await params).slug, (await searchParams).preview === '1');
-  if (!found) return { title: 'Article not found' };
+  if (!found) return { title: 'Article not found', robots: { index: false, follow: false } };
   const { post, preview } = found;
-  const image = post.og_image || post.cover_image;
-  return {
-    title: post.seo_title || post.title,
-    description: post.seo_description || post.excerpt || undefined,
-    openGraph: image ? { images: [image] } : undefined,
-    robots: preview ? { index: false, follow: false } : undefined,
-  };
+  return postMetadata(post as any, { preview });
 }
 
 // Articles written in the Studio CMS. (Posts that have an "External link" go straight to that URL from the Insights list.)
@@ -43,7 +38,7 @@ export default async function Page({ params, searchParams }: Props) {
   const found = await load((await params).slug, (await searchParams).preview === '1');
   if (!found) notFound();
   return (
-    <PageShell path={`insights/${found.post.slug}`} nodes={[]}>
+    <PageShell path={`insights/${found.post.slug}`} nodes={[]} jsonld={found.preview ? [] : postJsonLd({ ...(found.post as any), tags: found.post.tags })}>
       <PostArticle post={found.post} preview={found.preview} />
     </PageShell>
   );

@@ -2,17 +2,22 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import '../../../css/pages.css';
+import '../../../css/seo.css';
 import { pagesAction, restoreRevision, savePageSettings } from '@/app/admin/pages/actions';
 import ConfirmButton from '@/components/admin/ConfirmButton';
 import Flash, { type FlashParams } from '@/components/admin/Flash';
 import MediaField from '@/components/admin/MediaField';
 import PagesSettingsFields from '@/components/admin/PagesSettingsFields';
+import SeoFields from '@/components/admin/SeoFields';
+import SeoReport from '@/components/admin/SeoReport';
 import { requireCap } from '@/lib/auth';
 import { all, get } from '@/lib/db';
 import { stamp } from '@/lib/format';
 import { pageState, siteInfo, viewUrl } from '@/lib/page-admin';
+import { pageDoc } from '@/lib/pages';
 import { stampToLocalInput } from '@/lib/post-time';
 import { can } from '@/lib/roles';
+import { analyzePage } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Page settings' };
@@ -20,7 +25,9 @@ export const metadata: Metadata = { title: 'Page settings' };
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<FlashParams & { msg?: string }> };
 type Row = {
   id: number; path: string; title: string; status: 'draft' | 'published' | 'trash'; layout: string; seo_title: string; seo_description: string;
-  og_image: string; noindex: number; published_at: string | null; created_at: string; updated_at: string; author: string | null;
+  og_image: string; noindex: number; published_at: string | null; created_at: string; updated_at: string; author: string | null; content: string;
+  nofollow: number; focus_keyword: string; canonical_url: string; og_title: string; og_description: string; twitter_card: string; schema_type: string;
+  answer_summary: string; breadcrumb_title: string; custom_jsonld: string; code_css: string; code_head: string; code_footer: string;
 };
 
 export default async function PageSettings({ params, searchParams }: Props) {
@@ -41,6 +48,7 @@ export default async function PageSettings({ params, searchParams }: Props) {
   const trashed = p.status === 'trash';
   const mayPublish = can(user, 'publish_pages');
   const site = siteInfo();
+  const analysis = trashed ? null : analyzePage(p, pageDoc(p).nodes);
   const revisions = all<{ id: number; created_at: string; note: string; who: string | null; is_current: number }>(
     `SELECT r.id, r.created_at, r.note, COALESCE(NULLIF(u.name, ''), u.email) AS who, (r.content = p.content) AS is_current
        FROM revisions r JOIN pages p ON p.id = r.entity_id LEFT JOIN users u ON u.id = r.user_id
@@ -75,6 +83,16 @@ export default async function PageSettings({ params, searchParams }: Props) {
             <div className="pg-card-h"><h2>Social image</h2></div>
             <MediaField name="og_image" defaultValue={p.og_image} kind="image" label="Image shown when the page is shared" help="Recommended 1200 × 630 px. Empty uses the site default." />
           </div>
+          <SeoFields
+            kind="page"
+            canJsonLd={can(user, 'manage_seo')}
+            canCode={can(user, 'manage_code')}
+            values={{
+              focus_keyword: p.focus_keyword, canonical_url: p.canonical_url, nofollow: p.nofollow, og_title: p.og_title, og_description: p.og_description,
+              twitter_card: p.twitter_card, schema_type: p.schema_type, answer_summary: p.answer_summary, breadcrumb_title: p.breadcrumb_title,
+              custom_jsonld: p.custom_jsonld, code_css: p.code_css, code_head: p.code_head, code_footer: p.code_footer,
+            }}
+          />
         </div>
 
         <aside className="pg-side">
@@ -125,6 +143,14 @@ export default async function PageSettings({ params, searchParams }: Props) {
               <dt>Updated</dt><dd>{stamp(p.updated_at)}</dd>
             </dl>
           </div>
+
+          {analysis && (
+            <div className="sc-card pg-stack" id="seo-report">
+              <div className="pg-card-h"><h2>SEO &amp; AI check</h2></div>
+              <SeoReport result={analysis} />
+              <p className="se-note" style={{ margin: 0 }}>Based on the last saved version. The page builder’s “SEO &amp; AI” tab shows the same checks live while you edit.</p>
+            </div>
+          )}
         </aside>
       </form>
 

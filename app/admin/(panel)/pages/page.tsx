@@ -1,12 +1,16 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import '../../css/pages.css';
+import '../../css/seo.css';
 import Flash, { type FlashParams } from '@/components/admin/Flash';
 import PagesList, { type PagesListRow } from '@/components/admin/PagesList';
 import { requireCap } from '@/lib/auth';
+import { all } from '@/lib/db';
 import { stamp } from '@/lib/format';
 import { PAGE_TABS, TAB_LABEL, displayPath, pageCounts, queryPages, viewUrl, type PageTab } from '@/lib/page-admin';
+import { pageDoc } from '@/lib/pages';
 import { can } from '@/lib/roles';
+import { analyzePage, getSeo } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Pages' };
@@ -35,7 +39,15 @@ export default async function PagesAdmin({ searchParams }: { searchParams: Promi
     return s ? `/admin/pages?${s}` : '/admin/pages';
   };
 
+  // SEO / AI-readiness score of each listed page (computed from the saved content; trashed pages are skipped)
+  const seoSettings = getSeo();
+  const full = rows.length ? all<any>(`SELECT * FROM pages WHERE id IN (${rows.map(() => '?').join(',')})`, ...rows.map((r) => r.id)) : [];
+  const scoreOf = new Map<number, { seo: number; ai: number }>();
+  for (const f of full) if (f.status !== 'trash') scoreOf.set(f.id, analyzePage(f, pageDoc(f).nodes, seoSettings).scores);
+
   const list: PagesListRow[] = rows.map((r) => ({
+    seo: scoreOf.get(r.id)?.seo ?? null,
+    ai: scoreOf.get(r.id)?.ai ?? null,
     id: r.id,
     title: r.title,
     path: r.path,

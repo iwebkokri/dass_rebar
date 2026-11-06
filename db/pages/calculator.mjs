@@ -18,6 +18,9 @@ export default {
   title: 'Rebar Calculator',
   seoTitle: 'Rebar Weight Calculator',
   seoDescription: 'Calculate rebar mass by bar size, length and quantity using nominal CSA masses.',
+  // Search + AI fields: the direct answer is what answer engines and AI assistants quote (40-60 words); see docs/SEO-AND-TRACKING.md
+  focusKeyword: 'rebar weight calculator',
+  answerSummary: 'The Dass Rebar calculator estimates reinforcing steel weight from bar size, length and quantity, using nominal CSA masses per metre. Enter the bar size, the length of each bar and how many bars you need to see the total mass in kilograms, then send the calculation to our team as part of a quote request.',
   content: [
     // ---- page hero ----
     band(

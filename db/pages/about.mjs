@@ -93,6 +93,9 @@ export default {
   title: 'About Us',
   seoTitle: 'About Us',
   seoDescription: 'Family-led since 1986 — learn about Dass Rebar, a JDASS Corp company in Vaughan, Ontario.',
+  // Search + AI fields: the direct answer is what answer engines and AI assistants quote (40-60 words); see docs/SEO-AND-TRACKING.md
+  focusKeyword: 'about Dass Rebar',
+  answerSummary: 'Dass Rebar is a family-led rebar supplier and fabricator, in business since 1986 and part of JDASS Corp, based in Vaughan, Ontario. We are an MTO-approved source of reinforcing steel and serve residential developers, ICI and civil contractors and precast producers with estimating, detailing, fabrication and delivery.',
   content: [
     hero({
       image: '/images/p-facility-pond.jpg', crumbs: [['HOME', '/'], ['ABOUT US']],

@@ -31,6 +31,12 @@
 .fm-pv-field label, .fm-pv-check { font-size: 12px; font-weight: 600; color: #3a4658; }
 .fm-pv-check { display: flex; align-items: center; gap: 8px; }
 .fm-pv-field input:not([type="checkbox"]), .fm-pv-field textarea, .fm-pv-field select { width: 100%; border: 1px solid #d5d9df; border-radius: 6px; padding: 7px 9px; background: #fff; color: #182845; font: inherit; font-size: 13px; }
+.fm-pv-opts { display: flex; flex-direction: column; gap: 4px; }
+.fm-pv-help { font-size: 11px; color: #6b7686; }
+.fm-templates { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.fm-template { display: flex; flex-direction: column; gap: 6px; padding: 18px; text-decoration: none; color: inherit; transition: border-color 0.15s; }
+.fm-template:hover { border-color: var(--sc-border-strong); }
+.fm-template strong { font-size: 16px; }
 .fm-pv-btn { margin-top: 12px; display: inline-block; padding: 9px 18px; border-radius: 6px; background: #182845; color: #fff; font-weight: 600; font-size: 13px; }
 
 @media (max-width: 1100px) {

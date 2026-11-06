@@ -1,0 +1,12 @@
+/* Studio CMS — Popups (prefix pu-) */
+.pu-presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.pu-preset { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 14px; border: 1px solid var(--sc-border); border-radius: 12px; background: var(--sc-surface-2); }
+.pu-preset strong { font-size: 15px; }
+.pu-preset .sc-muted { font-size: 13px; flex: 1; }
+.pu-search { margin-left: auto; }
+.pu-search .sc-input { height: 32px; min-width: 200px; }
+.pu-table td { vertical-align: top; }
+.pu-actions { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.pu-actions form, .pu-rename { display: inline-flex; margin: 0; }
+.pu-rename { margin-top: 8px; gap: 6px; justify-content: flex-end; }
+.pu-rename .sc-input { height: 30px; width: 150px; font-size: 13px; }

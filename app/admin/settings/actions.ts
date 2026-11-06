@@ -14,7 +14,7 @@ import { EMAIL_RE } from '@/lib/users';
 const clip = (v: FormDataEntryValue | null, max: number) => String(v ?? '').replace(/\u0000/g, '').trim().slice(0, max);
 
 /** Image settings use the media library field (`<key>__pick` holds the URL, '' = removed). The current value is always taken from the DB. */
-const IMAGE_KEYS = ['site_logo', 'site_favicon', 'seo_default_og_image', 'bar_diagram_nominal', 'bar_diagram_side', 'bar_diagram_actual'] as const;
+const IMAGE_KEYS = ['site_logo', 'site_favicon', 'bar_diagram_nominal', 'bar_diagram_side', 'bar_diagram_actual'] as const;
 
 export async function saveSettings(fd: FormData) {
   const user = await requireCap('manage_settings');
@@ -25,7 +25,6 @@ export async function saveSettings(fd: FormData) {
     contact_phone: clip(fd.get('contact_phone'), 40),
     contact_email: clip(fd.get('contact_email'), 200),
     contact_address: clip(fd.get('contact_address'), 400),
-    seo_default_description: clip(fd.get('seo_default_description'), 320),
     notify_emails: clip(fd.get('notify_emails'), 300),
   };
 

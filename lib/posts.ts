@@ -23,6 +23,18 @@ export type PostRow = {
   og_image: string;
   created_at: string;
   updated_at: string;
+  // SEO / AI fields (migration 3)
+  noindex: number;
+  nofollow: number;
+  focus_keyword: string;
+  canonical_url: string;
+  og_title: string;
+  og_description: string;
+  twitter_card: string;
+  schema_type: string;
+  answer_summary: string;
+  breadcrumb_title: string;
+  custom_jsonld: string;
 };
 
 export type Term = { id: number; slug: string; name: string; description: string; taxonomy: 'category' | 'tag' };

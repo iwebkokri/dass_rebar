@@ -8,8 +8,13 @@ import { sanitizeDoc, sanitizeRich } from './builder/sanitize.mjs';
 import { parseDoc } from './builder/tree.mjs';
 import { safeMediaUrl, safeUrl } from './builder/url.mjs';
 import { parsePalette } from './palette';
+import { cleanCss, cleanRawHtml } from './html-snippet.mjs';
+import { cleanCustomJsonLd, cleanEntity, cleanGeneral, cleanLlms, cleanRobots, parseJson as seoParseJson } from './seo-core.mjs';
+import { TRACKER_FIELDS, validateTracking } from './tracking-core.mjs';
 import { checkRedirect, normalizeFrom } from './redirects';
 import { SECRET_KEY } from './settings';
+import { normalisePopupSettings } from './popups-shared';
+import { hasColumn } from './schema-ready';
 import type { AdminUser } from './auth';
 
 export const FORMAT = 'dassrebar-export';
@@ -91,12 +96,21 @@ const today = () => new Date().toISOString().slice(0, 10);
 const SLUG = /^[a-z0-9][a-z0-9\-_]{0,119}$/;
 const slugOf = (v: unknown) => str(v, 120).toLowerCase();
 
+/** Per-page / per-post search + AI fields shared by both specs. */
+const SEO_COLS: Spec = {
+  nofollow: { k: 'bool' }, focus_keyword: { k: 'text', max: 80 }, canonical_url: { k: 'url' }, og_title: { k: 'text', max: 200 }, og_description: { k: 'text', max: 400 },
+  twitter_card: { k: { enum: ['', 'summary', 'summary_large_image'] }, def: '' }, answer_summary: { k: 'text', max: 700 }, breadcrumb_title: { k: 'text', max: 100 },
+};
+
 const SPECS = {
   pages: {
     title: { k: 'text', max: 300, req: true }, status: { k: { enum: ['draft', 'published', 'trash'] }, def: 'draft' }, layout: { k: { enum: ['default', 'canvas'] }, def: 'default' },
     seo_title: { k: 'text', max: 300 }, seo_description: { k: 'text', max: 1000 }, og_image: { k: 'media' }, noindex: { k: 'bool' }, published_at: { k: 'date', def: null },
+    ...SEO_COLS, schema_type: { k: { enum: ['', 'WebPage', 'AboutPage', 'ContactPage', 'CollectionPage'] }, def: '' },
+    // administrator-only (stripped for anyone else in the page handler): custom JSON-LD and page-level code
+    custom_jsonld: { k: 'long', max: 20_000 }, code_css: { k: 'long', max: 100_000 }, code_head: { k: 'long', max: 100_000 }, code_footer: { k: 'long', max: 100_000 },
   },
-  templates: { kind: { k: { enum: ['header', 'footer', 'section', 'page'] }, req: true }, name: { k: 'text', max: 200, req: true }, active: { k: 'bool' } },
+  templates: { kind: { k: { enum: ['header', 'footer', 'section', 'page', 'popup'] }, req: true }, name: { k: 'text', max: 200, req: true }, active: { k: 'bool' } },
   menus: { name: { k: 'text', max: 200, req: true } },
   forms: { name: { k: 'text', max: 200, req: true } },
   terms: { taxonomy: { k: { enum: ['category', 'tag'] }, req: true }, name: { k: 'text', max: 200, req: true }, description: { k: 'text', max: 1000 } },
@@ -104,6 +118,7 @@ const SPECS = {
     title: { k: 'text', max: 300, req: true }, category: { k: 'text', max: 100 }, excerpt: { k: 'long', max: 5000 }, body: { k: 'long', max: 1_000_000 }, cover_image: { k: 'media' },
     external_url: { k: 'url' }, published_at: { k: 'date', def: today() }, status: { k: { enum: ['draft', 'published', 'trash'] }, def: 'draft' }, featured: { k: 'bool' },
     comments_enabled: { k: 'bool' }, seo_title: { k: 'text', max: 300 }, seo_description: { k: 'text', max: 1000 }, og_image: { k: 'media' },
+    ...SEO_COLS, noindex: { k: 'bool' }, schema_type: { k: { enum: ['', 'BlogPosting', 'Article', 'NewsArticle'] }, def: '' }, custom_jsonld: { k: 'long', max: 20_000 },
   },
   projects: {
     title: { k: 'text', max: 200, req: true }, category: { k: 'text', max: 60 }, location: { k: 'text', max: 160 }, address: { k: 'text', max: 200 },
@@ -164,10 +179,12 @@ export function buildExport(types: ExportType[]): ExportFile {
   const data: Record<string, unknown> = {};
 
   if (want.has('pages')) {
-    data.pages = all<any>('SELECT path, title, status, layout, content, seo_title, seo_description, og_image, noindex, published_at FROM pages ORDER BY path').map((r) => ({ ...r, content: parseJson(r.content, { v: 1, nodes: [] }) }));
+    data.pages = all<any>('SELECT path, title, status, layout, content, seo_title, seo_description, og_image, noindex, published_at, nofollow, focus_keyword, canonical_url, og_title, og_description, twitter_card, schema_type, answer_summary, breadcrumb_title, custom_jsonld, code_css, code_head, code_footer FROM pages ORDER BY path').map((r) => ({ ...r, content: parseJson(r.content, { v: 1, nodes: [] }) }));
   }
   if (want.has('templates')) {
-    data.templates = all<any>('SELECT kind, name, content, active FROM templates ORDER BY kind, name').map((r) => ({ ...r, content: parseJson(r.content, { v: 1, nodes: [] }) }));
+    // popups carry their settings (layout, triggers, rules) — only when the database already has that column
+    const withSettings = hasColumn('templates', 'settings');
+    data.templates = all<any>(`SELECT kind, name, content, active${withSettings ? ', settings' : ''} FROM templates ORDER BY kind, name`).map((r) => ({ ...r, content: parseJson(r.content, { v: 1, nodes: [] }), ...(withSettings ? { settings: parseJson(r.settings, {}) } : {}) }));
   }
   if (want.has('menus')) {
     data.menus = all<any>('SELECT slug, name, items FROM menus ORDER BY slug').map((r) => ({ ...r, items: parseJson(r.items, []) }));
@@ -181,7 +198,7 @@ export function buildExport(types: ExportType[]): ExportFile {
     const byPost = new Map<number, Array<{ taxonomy: string; slug: string }>>();
     for (const l of links) byPost.set(l.post_id, [...(byPost.get(l.post_id) ?? []), { taxonomy: l.taxonomy, slug: l.slug }]);
     data.posts = all<any>(
-      `SELECT id, slug, title, category, excerpt, body, cover_image, external_url, published_at, status, featured, comments_enabled, seo_title, seo_description, og_image FROM posts ORDER BY id`
+      `SELECT id, slug, title, category, excerpt, body, cover_image, external_url, published_at, status, featured, comments_enabled, seo_title, seo_description, og_image, noindex, nofollow, focus_keyword, canonical_url, og_title, og_description, twitter_card, schema_type, answer_summary, breadcrumb_title, custom_jsonld FROM posts ORDER BY id`
     ).map(({ id, ...r }) => ({ ...r, terms: byPost.get(id) ?? [] }));
   }
   if (want.has('comments')) {
@@ -279,7 +296,7 @@ type Handler = {
   author?: boolean; // table has author_id (new rows belong to the importer)
   /** natural-key columns derived from the raw row (the key is never taken from the spec cleaner alone) */
   keys: (raw: any) => Record<string, any> | string;
-  prep?: (row: Record<string, any>, raw: any) => { error?: string; doc?: any; extra?: any } | void;
+  prep?: (row: Record<string, any>, raw: any, ctx: ImportOptions) => { error?: string; doc?: any; extra?: any } | void;
   after?: (id: number, p: Prepared, existed: boolean) => void;
   onReplace?: () => void;
 };
@@ -294,7 +311,7 @@ function runHandler(h: Handler, rows: any[], ctx: ImportOptions): Counts {
     const cleaned = cleanRow(h.spec, raw);
     if (!cleaned.row) return skip(c, i, cleaned.error ?? 'invalid');
     const row = { ...cleaned.row, ...keys };
-    const extra = h.prep?.(row, raw) as { error?: string; doc?: any; extra?: any } | undefined;
+    const extra = h.prep?.(row, raw, ctx) as { error?: string; doc?: any; extra?: any } | undefined;
     if (extra?.error) return skip(c, i, extra.error);
     prepared.push({ row, raw, i, doc: extra?.doc, extra: extra?.extra });
   });
@@ -350,16 +367,50 @@ const slugKeys = (raw: any): Record<string, any> | string => {
   return SLUG.test(slug) ? { slug } : 'missing or invalid slug';
 };
 
+/**
+ * Custom JSON-LD and page-level code can only be imported by an administrator (they are raw code); for everyone else the columns are
+ * dropped from the row, so an existing page keeps what it has. Whatever an administrator imports is cleaned like a normal save.
+ */
+function cleanSeoSecrets(row: Record<string, any>, ctx: ImportOptions, codeCols: string[]) {
+  const admin = ctx.user.role === 'administrator';
+  if (!admin) {
+    delete row.custom_jsonld;
+    for (const c of codeCols) delete row[c];
+    return;
+  }
+  row.custom_jsonld = cleanCustomJsonLd(String(row.custom_jsonld ?? '')).value;
+  if (codeCols.includes('code_css')) {
+    row.code_css = cleanCss(String(row.code_css ?? ''));
+    row.code_head = cleanRawHtml(String(row.code_head ?? ''));
+    row.code_footer = cleanRawHtml(String(row.code_footer ?? ''));
+  }
+}
+
 const HANDLERS: Record<string, Handler> = {
   pages: {
     table: 'pages', key: ['path'], spec: SPECS.pages, touch: true, author: true,
     keys: pathKeys,
-    prep: (_row, raw) => { const doc = docOf(raw); return doc ? { doc } : { error: 'missing or invalid page content' }; },
+    prep: (row, raw, ctx) => {
+      const doc = docOf(raw);
+      if (!doc) return { error: 'missing or invalid page content' };
+      cleanSeoSecrets(row, ctx, ['code_css', 'code_head', 'code_footer']);
+      return { doc };
+    },
   },
   templates: {
     table: 'templates', key: ['kind', 'name'], spec: SPECS.templates, touch: true, author: true,
     keys: (raw) => ({ kind: str(raw?.kind, 20), name: str(raw?.name, 200) }),
-    prep: (_row, raw) => { const doc = docOf(raw); return doc ? { doc } : { error: 'missing or invalid template content' }; },
+    prep: (row, raw) => {
+      const doc = docOf(raw);
+      if (!doc) return { error: 'missing or invalid template content' };
+      if (row.kind === 'popup') {
+        // imported popups arrive SWITCHED OFF (never `active` from the file) with validated settings
+        delete row.active;
+        if (hasColumn('templates', 'settings')) row.settings = JSON.stringify(normalisePopupSettings(raw?.settings, row.name));
+        else return { error: 'popups need a database update first — restart the app, then import again' };
+      }
+      return { doc };
+    },
     after: (id, p) => {
       // only one active header / footer: an imported "active" one takes over
       if (p.row.active && (p.row.kind === 'header' || p.row.kind === 'footer')) run('UPDATE templates SET active = 0 WHERE kind = ? AND id != ?', p.row.kind, id);
@@ -395,9 +446,10 @@ const HANDLERS: Record<string, Handler> = {
   posts: {
     table: 'posts', key: ['slug'], spec: SPECS.posts, touch: true, author: true,
     keys: slugKeys,
-    prep: (row) => {
+    prep: (row, _raw, ctx) => {
       // Rich HTML bodies are sanitised; plain text / markdown-lite bodies pass through untouched.
       if (/<\s*[a-z!/]/i.test(String(row.body))) row.body = sanitizeRich(String(row.body));
+      cleanSeoSecrets(row, ctx, []);
     },
     after: (id, p) => {
       if (!Array.isArray(p.raw?.terms)) return;
@@ -445,6 +497,7 @@ function importSettings(data: Record<string, unknown>, ctx: ImportOptions): Coun
   const c = blank();
   const prepared: Array<[string, string]> = [];
   let secrets = 0;
+  let codeSkipped = 0;
   for (const [key, val] of Object.entries(data)) {
     if (!/^[a-z][a-z0-9_]{0,63}$/.test(key)) { skip(c, prepared.length, `invalid key “${key.slice(0, 30)}”`); continue; }
     if (SECRET_KEY.test(key)) { secrets++; continue; }
@@ -454,9 +507,27 @@ function importSettings(data: Record<string, unknown>, ctx: ImportOptions): Coun
       const p = parsePalette(value);
       if (!p) { skip(c, prepared.length, 'design_palette is not a valid colour list'); continue; }
       value = JSON.stringify(p);
+    } else if (key.startsWith('track_')) {
+      // tracking IDs go through the same strict validators as the admin screen
+      const k = key.slice('track_'.length);
+      if (k === 'skip_users') value = value === '0' ? '0' : '1';
+      else if ((TRACKER_FIELDS as { key: string }[]).some((f) => f.key === k)) {
+        const v = validateTracking({ [k]: value });
+        if (v.errors[k]) { skip(c, prepared.length, `“${key}” is not a valid ID`); continue; }
+        value = v.values[k];
+      } else { skip(c, prepared.length, `unknown setting “${key}”`); continue; }
+    } else if (/^code_(css|head|body|footer)$/.test(key)) {
+      // raw custom code: administrators only, and cleaned like a normal save
+      if (ctx.user.role !== 'administrator') { codeSkipped++; continue; }
+      value = key === 'code_css' ? cleanCss(value) : cleanRawHtml(value);
+    } else if (key === 'seo_general' || key === 'seo_entity' || key === 'seo_robots' || key === 'seo_llms') {
+      const obj = seoParseJson(value, null);
+      if (!obj) { skip(c, prepared.length, `“${key}” is not valid JSON`); continue; }
+      value = JSON.stringify(key === 'seo_general' ? cleanGeneral(obj) : key === 'seo_entity' ? cleanEntity(obj).entity : key === 'seo_robots' ? cleanRobots(obj) : cleanLlms(obj));
     } else if (IMAGE_SETTING.test(key)) value = safeMediaUrl(value.trim());
     prepared.push([key, value]);
   }
+  if (codeSkipped) c.notes.push(`${codeSkipped} custom-code setting${codeSkipped === 1 ? '' : 's'} ignored (only administrators can import code)`);
   if (secrets) c.notes.push(`${secrets} credential-like setting${secrets === 1 ? '' : 's'} ignored`);
   if (ctx.mode === 'replace' && prepared.length) {
     for (const r of all<{ key: string }>('SELECT key FROM settings')) {

@@ -20,6 +20,19 @@ export type Post = {
   seo_title: string;
   seo_description: string;
   og_image: string;
+  // SEO / AI fields (migration 3) — present on single-article reads (SELECT p.*), not on list cards
+  updated_at?: string;
+  noindex?: number;
+  nofollow?: number;
+  focus_keyword?: string;
+  canonical_url?: string;
+  og_title?: string;
+  og_description?: string;
+  twitter_card?: string;
+  schema_type?: string;
+  answer_summary?: string;
+  breadcrumb_title?: string;
+  custom_jsonld?: string;
 };
 
 export type TermRef = { slug: string; name: string };

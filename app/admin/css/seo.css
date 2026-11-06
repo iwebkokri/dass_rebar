@@ -1,0 +1,34 @@
+/* SEO & AI + Tracking & code screens */
+.se-code { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 12.5px; line-height: 1.5; white-space: pre; overflow: auto; tab-size: 2; }
+.se-count { font-size: 12px; color: var(--sc-muted); }
+.se-count.is-good { color: var(--sc-ok); }
+.se-count.is-off { color: var(--sc-warn); }
+.se-lead { color: var(--sc-muted); margin: 0 0 14px; max-width: 78ch; }
+.se-note { color: var(--sc-muted); font-size: 12.5px; }
+.se-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 22px; }
+.se-pre { background: rgba(0, 0, 0, 0.45); border: 1px solid var(--sc-border); border-radius: 8px; padding: 14px; overflow: auto; max-height: 560px; font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 12px; line-height: 1.5; white-space: pre; margin: 0; }
+.se-bots { width: 100%; border-collapse: collapse; }
+.se-bots th, .se-bots td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--sc-border); vertical-align: middle; }
+.se-bots th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sc-muted); }
+.se-bots code { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 12.5px; }
+.se-seg { display: inline-flex; border: 1px solid var(--sc-border-strong); border-radius: 8px; overflow: hidden; }
+.se-seg label { display: block; cursor: pointer; }
+.se-seg input { position: absolute; opacity: 0; pointer-events: none; }
+.se-seg span { display: block; padding: 5px 12px; font-size: 13px; font-weight: 600; color: var(--sc-muted); }
+.se-seg input:checked + span { background: #fff; color: #000; }
+.se-seg input:focus-visible + span { outline: 2px solid #fff; outline-offset: -2px; }
+.se-seg label:last-child input:checked + span { background: var(--sc-danger); color: #000; }
+.se-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.se-inline .sc-input { min-width: 180px; flex: 1; }
+.se-trk-sum { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 4px; }
+.se-score-cell { display: inline-block; min-width: 34px; text-align: center; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 12px; border: 1px solid var(--sc-border-strong); }
+.se-score-cell[data-band="good"] { color: var(--sc-ok); border-color: rgba(86, 211, 100, 0.4); }
+.se-score-cell[data-band="ok"] { color: var(--sc-warn); border-color: rgba(227, 179, 65, 0.4); }
+.se-score-cell[data-band="poor"] { color: var(--sc-danger); border-color: rgba(255, 123, 114, 0.45); }
+.se-path { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 12.5px; word-break: break-all; }
+@media (max-width: 900px) { .se-grid-3 { grid-template-columns: minmax(0, 1fr); } }
+
+/* (the same helpers pages.css defines, so SEO fields also work on screens that don't load pages.css, e.g. the post editor) */
+.pg-stack { display: flex; flex-direction: column; gap: 16px; }
+.pg-card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.pg-card-h h2 { margin: 0 !important; }

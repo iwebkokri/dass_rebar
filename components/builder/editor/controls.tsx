@@ -15,6 +15,8 @@ export type Lists = {
   forms: { id: number; name: string }[];
   categories: { slug: string; name: string }[];
   sections: { id: number; name: string }[];
+  /** popups a link can open ("#popup:<slug>") */
+  popups: { slug: string; name: string }[];
 };
 export type CtlCx = { device: Device; lists: Lists; palette: [string, string][]; pickMedia: (kind: 'image' | 'video', cb: (url: string) => void) => void; editTemplate: (id: string) => void };
 
@@ -167,6 +169,11 @@ function UrlInput({ value, cx, onChange }: { value: any; cx: CtlCx; onChange: (v
   return (
     <div className="be-url">
       <input className="be-input" list={id} value={value ?? ''} placeholder="https://… or /page" onChange={(e) => onChange(e.target.value || undefined)} />
+      <select className="be-input" value="" onChange={(e) => { if (e.target.value) onChange(e.target.value); }} aria-label="Popup action">
+        <option value="">Popup action…</option>
+        {(cx.lists.popups || []).map((p) => <option key={p.slug} value={`#popup:${p.slug}`}>Open popup: {p.name}</option>)}
+        <option value="#popup-close">Close the popup</option>
+      </select>
       <select className="be-input" value="" onChange={(e) => { if (e.target.value) onChange(e.target.value); }} aria-label="Link to a page">
         <option value="">Link to a page…</option>
         {cx.lists.pages.map((p) => <option key={p.id} value={`/${p.path}`}>{p.title} ({p.path ? '/' + p.path : 'home'})</option>)}

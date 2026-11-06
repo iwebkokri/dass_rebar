@@ -15,14 +15,24 @@ export type MenuItem = {
 
 export type FormField = {
   id: string;
-  type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'checkbox' | 'number' | 'file' | 'date';
+  type: 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'checkboxes' | 'consent' | 'number' | 'file' | 'date' | 'hidden';
   label: string;
   required?: boolean;
   placeholder?: string;
+  /** Small text shown under the field */
+  help?: string;
   options?: string[];
   width?: 'full' | 'half';
+  /** hidden fields: the value that is stored (always taken from here, never from the browser) */
+  value?: string;
+  /** email fields: this is the customer's contact address (Reply-To of the lead email) */
+  contact?: boolean;
+  /** use this answer as the customer's name / email / phone / company / message (CMS list, lead email, Lead Manager) instead of guessing from the label */
+  map?: 'name' | 'email' | 'phone' | 'company' | 'message';
 };
-export type FormDef = { id: number; name: string; slug: string; fields: FormField[]; settings: { submitLabel?: string; successMessage?: string; redirectUrl?: string } };
+/** What the PUBLIC widget gets (never includes recipients or auto-reply text). */
+export type FormPublicSettings = { submitLabel?: string; successMessage?: string; redirectUrl?: string };
+export type FormDef = { id: number; name: string; slug: string; fields: FormField[]; settings: FormPublicSettings };
 
 /** Datasets the server loads for the widgets on a page (see lib/builder/data.ts). Only the ones a page needs are present. */
 export type BuilderData = {

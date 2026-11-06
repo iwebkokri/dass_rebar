@@ -26,6 +26,9 @@ export default {
   title: 'Contact',
   seoTitle: 'Contact',
   seoDescription: 'Contact Dass Rebar at 370 New Enterprise Way, Woodbridge, ON — (905) 813-3014.',
+  // Search + AI fields: the direct answer is what answer engines and AI assistants quote (40-60 words); see docs/SEO-AND-TRACKING.md
+  focusKeyword: 'contact Dass Rebar',
+  answerSummary: 'Contact Dass Rebar at 370 New Enterprise Way, Woodbridge, Ontario, or call (905) 813-3014. Use the contact form for general questions and the quote request for pricing on cut-and-bent rebar, mesh and other reinforcing steel, attaching drawings if you have them. Messages sent through the website go straight to our team.',
   content: [
     // ---- hero: heading + address / phone / email strip ----
     section(

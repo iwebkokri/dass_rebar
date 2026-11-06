@@ -3,6 +3,8 @@ import Link from 'next/link';
 import '../css/pages.css';
 import { quickDraft } from '@/app/admin/dashboard/actions';
 import Flash from '@/components/admin/Flash';
+import LeadForwardStatus from '@/components/admin/LeadForwardStatus';
+import MailStatus from '@/components/admin/MailStatus';
 import { requireUser } from '@/lib/auth';
 import { all, get } from '@/lib/db';
 import { stamp } from '@/lib/format';
@@ -88,6 +90,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       </div>
 
       <Flash params={{ error }} />
+      {(can(user, 'manage_email') || may.subs) && <MailStatus canManage={can(user, 'manage_email')} />}
+      {can(user, 'manage_integrations') && <LeadForwardStatus />}
       {draftId > 0 && (
         <div className="pg-notice" role="status">
           Draft saved. <Link href={`/admin/posts/${draftId}`}>Keep writing it</Link>.

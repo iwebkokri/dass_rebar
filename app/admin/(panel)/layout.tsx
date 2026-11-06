@@ -31,13 +31,14 @@ export default async function PanelLayout({ children }: { children: React.ReactN
       heading: 'Design',
       items: [
         { href: '/admin/templates', label: 'Templates', cap: 'manage_site' },
+        { href: '/admin/popups', label: 'Popups', cap: 'manage_forms' },
         { href: '/admin/menus', label: 'Menus', cap: 'manage_menus' },
       ],
     },
     {
       heading: 'Data',
       items: [
-        { href: '/admin/forms', label: 'Forms', cap: 'manage_site' },
+        { href: '/admin/forms', label: 'Forms', cap: 'manage_forms' },
         { href: '/admin/submissions', label: 'Submissions', cap: 'view_submissions', count: newSubs },
         { href: '/admin/projects', label: 'Projects', cap: 'manage_content' },
         { href: '/admin/products', label: 'Products', cap: 'manage_content' },
@@ -48,9 +49,13 @@ export default async function PanelLayout({ children }: { children: React.ReactN
       heading: 'Site',
       items: [
         { href: '/admin/users', label: 'Users', cap: 'manage_users' },
+        { href: '/admin/seo', label: 'SEO & AI', cap: 'manage_seo' },
+        { href: '/admin/tracking', label: 'Tracking & code', cap: 'manage_code' },
         { href: '/admin/redirects', label: 'Redirects', cap: 'manage_site' },
         { href: '/admin/tools', label: 'Import / Export', cap: 'manage_site' },
         { href: '/admin/activity', label: 'Activity log', cap: 'manage_site' },
+        { href: '/admin/email', label: 'Email', cap: 'manage_email' },
+        { href: '/admin/lead-manager', label: 'Lead Manager', cap: 'manage_integrations' },
         { href: '/admin/settings', label: 'Settings', cap: 'manage_settings' },
         { href: '/admin/account', label: 'My profile' },
       ],

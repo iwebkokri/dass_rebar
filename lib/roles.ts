@@ -5,8 +5,8 @@ export const ROLES: Role[] = ['administrator', 'editor', 'author'];
 
 export const ROLE_LABEL: Record<Role, string> = { administrator: 'Administrator', editor: 'Editor', author: 'Author' };
 export const ROLE_HELP: Record<Role, string> = {
-  administrator: 'Everything: users, settings, site-wide templates, menus, forms, redirects, import/export.',
-  editor: 'Pages and the page builder, all posts, media, comments, submissions, projects, products.',
+  administrator: 'Everything: users, settings, site-wide templates, menus, forms, redirects, import/export, SEO tools, tracking and custom code.',
+  editor: 'Pages and the page builder (including each page’s SEO fields), all posts, media, comments, submissions, projects, products.',
   author: 'Writes and publishes their own posts and uploads media. Cannot touch pages or settings.',
 };
 
@@ -28,17 +28,22 @@ export type Cap =
   | 'edit_others_media'
   | 'moderate_comments'
   | 'view_submissions'
-  | 'manage_content';   // projects, products, bar data
+  | 'manage_content'    // projects, products, bar data
+  | 'manage_seo'        // site-wide SEO / AI settings, llms.txt, robots, 404 monitor (per-page SEO fields only need edit_pages)
+  | 'manage_code'       // tracking IDs + custom CSS / JavaScript / HTML (raw code: administrators only)
+  | 'manage_forms'      // build forms and popups (administrators + editors); where leads are emailed stays with manage_email
+  | 'manage_email'      // SMTP login, lead-notification recipients, email design + log, per-form recipients / auto-reply (administrators only)
+  | 'manage_integrations'; // Lead Manager webhook URL + key and its delivery log (administrators only; the URL contains a secret token)
 
 const ALL: Cap[] = [
   'manage_users', 'manage_settings', 'manage_site', 'manage_menus', 'use_builder', 'edit_pages', 'publish_pages', 'delete_pages',
   'edit_posts', 'edit_others_posts', 'publish_posts', 'delete_posts', 'manage_terms', 'upload_media', 'edit_others_media',
-  'moderate_comments', 'view_submissions', 'manage_content',
+  'moderate_comments', 'view_submissions', 'manage_content', 'manage_seo', 'manage_code', 'manage_forms', 'manage_email', 'manage_integrations',
 ];
 
 const MATRIX: Record<Role, Cap[]> = {
   administrator: ALL,
-  editor: ALL.filter((c) => !['manage_users', 'manage_settings', 'manage_site'].includes(c)) as Cap[],
+  editor: ALL.filter((c) => !['manage_users', 'manage_settings', 'manage_site', 'manage_seo', 'manage_code', 'manage_email', 'manage_integrations'].includes(c)) as Cap[],
   author: ['edit_posts', 'publish_posts', 'delete_posts', 'upload_media'],
 };
 

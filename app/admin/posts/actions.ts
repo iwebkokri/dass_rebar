@@ -11,6 +11,7 @@ import { localInputToStamp, nowStamp, stampToLocalInput } from '@/lib/post-time'
 import { canEditPost, ensureTerm, saveRevision, syncPostTerms, uniquePostSlug, type PostRow } from '@/lib/posts';
 import { can } from '@/lib/roles';
 import { slugify } from '@/lib/slug.mjs';
+import { cleanContentSeo, cleanCustomJsonLd } from '@/lib/seo-core.mjs';
 
 function go(pathname: string, params: Record<string, string> = {}): never {
   const qs = new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v))).toString();
@@ -96,6 +97,21 @@ export async function savePost(idParam: string, fd: FormData) {
 
   const seoTitle = clip(fd.get('seo_title'), 200);
   const seoDescription = clip(fd.get('seo_description'), 400);
+  // advanced search + AI fields (custom JSON-LD only for people with manage_seo; otherwise the stored value is kept)
+  const seo = cleanContentSeo({
+    focus_keyword: fd.get('focus_keyword'), canonical_url: fd.get('canonical_url'), nofollow: fd.get('nofollow'), og_title: fd.get('og_title'),
+    og_description: fd.get('og_description'), twitter_card: fd.get('twitter_card'), schema_type: fd.get('schema_type'),
+    answer_summary: fd.get('answer_summary'), breadcrumb_title: fd.get('breadcrumb_title'),
+  }, { kind: 'post' });
+  if (seo.error) go(here, { error: seo.error });
+  const noindex = fd.get('noindex') === 'on' ? 1 : 0;
+  let customJsonLd = existing?.custom_jsonld ?? '';
+  if (can(user, 'manage_seo') && fd.has('custom_jsonld')) {
+    const j = cleanCustomJsonLd(String(fd.get('custom_jsonld') ?? ''));
+    if (j.error) go(here, { error: j.error });
+    customJsonLd = j.value;
+  }
+  const v = seo.values;
 
   // taxonomy ------------------------------------------------------------------------------------
   const canAddCategories = can(user, 'manage_terms');
@@ -126,14 +142,20 @@ export async function savePost(idParam: string, fd: FormData) {
       if (existing.title !== title || existing.body !== body) saveRevision(existing.id, user.id, existing.title, existing.body, `Replaced by ${user.name || user.email}`);
       run(
         `UPDATE posts SET title = ?, slug = ?, excerpt = ?, body = ?, cover_image = ?, external_url = ?, status = ?, published_at = ?, featured = ?,
-           comments_enabled = ?, author_id = ?, seo_title = ?, seo_description = ?, og_image = ?, updated_at = datetime('now') WHERE id = ?`,
-        title, slug, excerpt, body, cover, external, status, publishedAt, featured, commentsEnabled, authorId, seoTitle, seoDescription, og, existing.id
+           comments_enabled = ?, author_id = ?, seo_title = ?, seo_description = ?, og_image = ?,
+           focus_keyword = ?, canonical_url = ?, noindex = ?, nofollow = ?, og_title = ?, og_description = ?, twitter_card = ?, schema_type = ?,
+           answer_summary = ?, breadcrumb_title = ?, custom_jsonld = ?, updated_at = datetime('now') WHERE id = ?`,
+        title, slug, excerpt, body, cover, external, status, publishedAt, featured, commentsEnabled, authorId, seoTitle, seoDescription, og,
+        v.focus_keyword, v.canonical_url, noindex, v.nofollow, v.og_title, v.og_description, v.twitter_card, v.schema_type, v.answer_summary, v.breadcrumb_title, customJsonLd,
+        existing.id
       );
     } else {
       pid = run(
-        `INSERT INTO posts (title, slug, excerpt, body, cover_image, external_url, status, published_at, featured, comments_enabled, author_id, seo_title, seo_description, og_image)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        title, slug, excerpt, body, cover, external, status, publishedAt, featured, commentsEnabled, authorId, seoTitle, seoDescription, og
+        `INSERT INTO posts (title, slug, excerpt, body, cover_image, external_url, status, published_at, featured, comments_enabled, author_id, seo_title, seo_description, og_image,
+           focus_keyword, canonical_url, noindex, nofollow, og_title, og_description, twitter_card, schema_type, answer_summary, breadcrumb_title, custom_jsonld)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        title, slug, excerpt, body, cover, external, status, publishedAt, featured, commentsEnabled, authorId, seoTitle, seoDescription, og,
+        v.focus_keyword, v.canonical_url, noindex, v.nofollow, v.og_title, v.og_description, v.twitter_card, v.schema_type, v.answer_summary, v.breadcrumb_title, customJsonLd
       ).lastInsertRowid;
     }
     syncPostTerms(pid, categoryIds, tagIds);

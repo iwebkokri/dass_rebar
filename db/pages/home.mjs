@@ -200,5 +200,8 @@ export default {
   // same text the old home route used (app/layout.tsx default metadata)
   seoTitle: 'Dass Rebar | MTO-Approved Rebar Supplier & Fabricator in Ontario',
   seoDescription: 'Dass Rebar supplies and fabricates reinforcing steel across the GTA and Ontario — estimating, detailing, cutting, bending and delivery. MTO Designated Source for Materials.',
+  // Search + AI fields: the direct answer is what answer engines and AI assistants quote (40-60 words); see docs/SEO-AND-TRACKING.md
+  focusKeyword: 'rebar supplier Ontario',
+  answerSummary: 'Dass Rebar is an MTO-approved supplier and fabricator of reinforcing steel serving the Greater Toronto Area and Ontario. We handle estimating, detailing, cutting, bending and delivery in-house, and supply Grade 400W and 500W rebar, epoxy-coated bar, GFRP bars and welded wire mesh for residential, commercial, institutional and infrastructure projects.',
   content: [hero, servicesAndExpertise, keyFigures, products, projects, sectors, whyUs, calculator, insights, cta],
 };

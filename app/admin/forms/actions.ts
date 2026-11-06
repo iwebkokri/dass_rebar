@@ -1,24 +1,39 @@
 'use server';
 
 // Custom forms: save / duplicate / delete. Every action starts with requireCap — actions are public HTTP endpoints.
+// Administrators AND editors can build forms (manage_forms); where the emails go (recipients, subject, auto-reply) stays with
+// administrators (manage_email): an editor's save keeps whatever an administrator configured.
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireCap } from '@/lib/auth';
 import { logActivity } from '@/lib/activity';
 import { get, run } from '@/lib/db';
 import { getForm, uniqueFormSlug } from '@/lib/forms';
-import { normaliseFormInput } from '@/lib/forms-shared';
+import { normaliseFormInput, type FormSettings } from '@/lib/forms-shared';
+import { can } from '@/lib/roles';
 
 export type SaveFormResult = { ok: true; id: number; slug: string } | { ok: false; error: string };
 
+const EMAIL_KEYS = ['notify', 'notifyEmails', 'notifySubject', 'autoReply', 'autoReplySubject', 'autoReplyBody'] as const;
+
+/** Take the email-related settings from `from` (what is stored) instead of from what the browser sent. */
+function keepEmailSettings(next: FormSettings, from: FormSettings | undefined): FormSettings {
+  const out: Record<string, unknown> = { ...next };
+  for (const k of EMAIL_KEYS) delete out[k];
+  for (const k of EMAIL_KEYS) if (from && from[k] !== undefined) out[k] = from[k];
+  return out as FormSettings;
+}
+
 /** Create (idParam 'new') or update a form from the builder's JSON. Returns the stored id/slug (the client then navigates / shows "Saved"). */
 export async function saveForm(idParam: number | 'new', raw: unknown): Promise<SaveFormResult> {
-  const user = await requireCap('manage_site');
+  const user = await requireCap('manage_forms');
   const parsed = normaliseFormInput(raw);
   if ('error' in parsed) return { ok: false, error: parsed.error };
   const v = parsed.value;
+  const canEmail = can(user, 'manage_email');
 
   if (idParam === 'new') {
+    if (!canEmail) v.settings = keepEmailSettings(v.settings, undefined);
     const slug = uniqueFormSlug(v.slug);
     const id = run('INSERT INTO forms (name, slug, fields, settings) VALUES (?, ?, ?, ?)', v.name, slug, JSON.stringify(v.fields), JSON.stringify(v.settings)).lastInsertRowid;
     logActivity(user, 'create', 'form', id, `Created form “${v.name}”`);
@@ -28,6 +43,7 @@ export async function saveForm(idParam: number | 'new', raw: unknown): Promise<S
 
   const existing = getForm(Number(idParam));
   if (!existing) return { ok: false, error: 'That form no longer exists.' };
+  if (!canEmail) v.settings = keepEmailSettings(v.settings, existing.settings);
   // The slug is fixed after creation: submissions are filed under 'form:<slug>', so changing it would split the history.
   run("UPDATE forms SET name = ?, fields = ?, settings = ?, updated_at = datetime('now') WHERE id = ?", v.name, JSON.stringify(v.fields), JSON.stringify(v.settings), existing.id);
   logActivity(user, 'update', 'form', existing.id, `Saved form “${v.name}” (${v.fields.length} fields)`);
@@ -36,7 +52,7 @@ export async function saveForm(idParam: number | 'new', raw: unknown): Promise<S
 }
 
 export async function duplicateForm(id: number) {
-  const user = await requireCap('manage_site');
+  const user = await requireCap('manage_forms');
   const src = getForm(Number(id));
   if (!src) redirect(`/admin/forms?error=${encodeURIComponent('That form no longer exists.')}`);
   const name = `${src.name} (copy)`.slice(0, 120);
@@ -47,7 +63,7 @@ export async function duplicateForm(id: number) {
 }
 
 export async function deleteForm(id: number) {
-  const user = await requireCap('manage_site');
+  const user = await requireCap('manage_forms');
   const f = get<{ id: number; name: string }>('SELECT id, name FROM forms WHERE id = ?', Number(id));
   if (!f) redirect('/admin/forms');
   // Past submissions are kept (they stay under their "form:<slug>" type in Submissions).

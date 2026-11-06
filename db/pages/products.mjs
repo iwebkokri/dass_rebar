@@ -19,6 +19,9 @@ export default {
   title: 'Products & Bar Data',
   seoTitle: 'Products & Bar Data',
   seoDescription: 'Grade 400W/500W rebar 10M–55M, epoxy-coated rebar, GFRP bars and welded wire mesh, plus full CSA bar data.',
+  // Search + AI fields: the direct answer is what answer engines and AI assistants quote (40-60 words); see docs/SEO-AND-TRACKING.md
+  focusKeyword: 'rebar sizes and bar data',
+  answerSummary: 'Dass Rebar supplies Grade 400W and 500W reinforcing bar in sizes 10M to 55M, plus epoxy-coated rebar, GFRP bars and welded wire mesh. The products page also lists full CSA bar data, including nominal diameter, mass per metre, cross-sectional area and perimeter for each bar size, to help with estimating and ordering.',
   content: [
     hero({
       image: '/images/p-gfrp.jpg',

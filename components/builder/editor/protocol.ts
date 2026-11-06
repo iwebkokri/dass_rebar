@@ -1,5 +1,6 @@
 // Messages between the editor shell (parent window) and the canvas (iframe). Same-origin only.
 import type { BNode, Device } from '@/lib/builder/types';
+import type { PopupSettings } from '@/lib/popups-shared';
 
 export type Target = 'page' | 'header' | 'footer';
 export type Docs = { page: BNode[]; header: BNode[] | null; footer: BNode[] | null };
@@ -12,7 +13,7 @@ export type DragPayload =
   | { kind: 'move'; id: string };
 
 export type ToCanvas =
-  | { t: 'state'; docs: Docs; active: Target; selectedId: string | null; hoverId: string | null; path: string; device: Device }
+  | { t: 'state'; docs: Docs; active: Target; selectedId: string | null; hoverId: string | null; path: string; device: Device; /** set while editing a popup: the canvas draws it as a popup */ popup?: PopupSettings | null }
   | { t: 'drag'; payload: DragPayload | null }
   | { t: 'scrollTo'; id: string };
 

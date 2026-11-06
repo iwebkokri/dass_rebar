@@ -18,9 +18,24 @@ export type PageRow = {
   published_at: string | null;
   created_at: string;
   updated_at: string;
+  // SEO / AI fields (migration 3)
+  nofollow: number;
+  focus_keyword: string;
+  canonical_url: string;
+  og_title: string;
+  og_description: string;
+  twitter_card: string;
+  schema_type: string;
+  answer_summary: string;
+  breadcrumb_title: string;
+  custom_jsonld: string;
+  // page-level code (administrators only)
+  code_css: string;
+  code_head: string;
+  code_footer: string;
 };
 
-export type TemplateRow = { id: number; kind: 'header' | 'footer' | 'section' | 'page'; name: string; content: string; active: number; updated_at: string };
+export type TemplateRow = { id: number; kind: 'header' | 'footer' | 'section' | 'page' | 'popup'; name: string; content: string; active: number; updated_at: string };
 
 /** Normalise a request path: no leading/trailing slashes, lower-case. '' is the home page. */
 export const normPath = (p: string) => p.replace(/^\/+|\/+$/g, '').toLowerCase();

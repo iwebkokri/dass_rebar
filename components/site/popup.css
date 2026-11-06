@@ -1,0 +1,51 @@
+/* Popups (public site + the builder's popup canvas share .dr-pu-box). Prefix dr-pu. */
+.dr-pu { position: fixed; inset: 0; z-index: var(--pu-z, 9000); pointer-events: none; display: flex; }
+.dr-pu.is-modal { pointer-events: auto; background: var(--pu-ov, rgba(11, 18, 32, 0.6)); align-items: center; justify-content: center; padding: 12px; }
+.dr-pu-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.dr-pu-box { position: relative; pointer-events: auto; box-sizing: border-box; width: var(--pu-w, 560px); max-width: 100%; max-height: var(--pu-mh, calc(100vh - 32px)); overflow: auto; background: var(--pu-bg, #fff); border-radius: var(--pu-r, 12px); box-shadow: var(--pu-shadow, 0 24px 70px rgba(11, 18, 32, 0.45)); outline: none; overscroll-behavior: contain; }
+.dr-pu-body { min-width: 0; }
+.dr-pu-body .dr-t-section { max-width: 100%; }
+
+/* positions */
+.dr-pu--slide-br { align-items: flex-end; justify-content: flex-end; padding: 16px; }
+.dr-pu--slide-bl { align-items: flex-end; justify-content: flex-start; padding: 16px; }
+.dr-pu--bar-top { align-items: flex-start; justify-content: stretch; }
+.dr-pu--bar-bottom { align-items: flex-end; justify-content: stretch; }
+.dr-pu--bar-top .dr-pu-box, .dr-pu--bar-bottom .dr-pu-box { width: 100%; max-height: 40vh; }
+.dr-pu--fullscreen { align-items: stretch; justify-content: stretch; padding: 0; }
+.dr-pu--fullscreen .dr-pu-box { width: 100%; max-width: none; max-height: none; height: 100%; }
+
+/* close button */
+.dr-pu-x { position: absolute; z-index: 3; top: 10px; right: 10px; border: 0; cursor: pointer; font: 600 22px/1 var(--font-inter), Arial, sans-serif; color: #3a4658; background: transparent; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+.dr-pu-x:hover { color: #182845; }
+.dr-pu-x:focus-visible { outline: 2px solid #7f5f47; outline-offset: 2px; }
+.dr-pu-x--circle { background: rgba(24, 40, 69, 0.08); }
+.dr-pu-x--circle:hover { background: rgba(24, 40, 69, 0.16); }
+.dr-pu-x--text { width: auto; height: auto; padding: 8px 12px; border-radius: 999px; font-size: 13px; background: rgba(24, 40, 69, 0.08); }
+.dr-pu-x--left { right: auto; left: 10px; }
+.dr-pu.is-modal:not(.dr-pu--fullscreen) .dr-pu-x--outside { top: -14px; right: -14px; background: #fff; box-shadow: 0 4px 14px rgba(11, 18, 32, 0.3); }
+.dr-pu--bar-top .dr-pu-x, .dr-pu--bar-bottom .dr-pu-x { top: 50%; transform: translateY(-50%); color: #fff; }
+.dr-pu.is-modal:not(.dr-pu--fullscreen) .dr-pu-box:has(.dr-pu-x--outside) { overflow: visible; }
+
+/* entrance animations (off for people who ask for reduced motion) */
+@keyframes dr-pu-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dr-pu-zoom { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes dr-pu-up { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+@keyframes dr-pu-down { from { opacity: 0; transform: translateY(-100%); } to { opacity: 1; transform: none; } }
+@keyframes dr-pu-in-r { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@keyframes dr-pu-in-l { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+.dr-pu.is-modal { animation: dr-pu-fade 0.2s ease-out both; }
+.dr-pu-a-fade .dr-pu-box { animation: dr-pu-fade 0.25s ease-out both; }
+.dr-pu-a-zoom .dr-pu-box { animation: dr-pu-zoom 0.25s ease-out both; }
+.dr-pu-a-slide .dr-pu-box { animation: dr-pu-up 0.3s ease-out both; }
+.dr-pu-a-slide.dr-pu--bar-top .dr-pu-box { animation-name: dr-pu-down; }
+.dr-pu-a-slide.dr-pu--slide-br .dr-pu-box { animation-name: dr-pu-in-r; }
+.dr-pu-a-slide.dr-pu--slide-bl .dr-pu-box { animation-name: dr-pu-in-l; }
+.dr-pu-a-none .dr-pu-box, .dr-pu-a-none.is-modal { animation: none; }
+@media (prefers-reduced-motion: reduce) { .dr-pu, .dr-pu-box { animation: none !important; } }
+
+@media (max-width: 640px) {
+  .dr-pu--slide-br, .dr-pu--slide-bl { padding: 8px; }
+  .dr-pu.is-modal:not(.dr-pu--fullscreen) .dr-pu-x--outside { top: 6px; right: 6px; }
+}

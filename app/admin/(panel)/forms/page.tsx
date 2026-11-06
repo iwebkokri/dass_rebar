@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Forms' };
 
 export default async function Forms({ searchParams }: { searchParams: Promise<FlashParams> }) {
-  await requireCap('manage_site');
+  await requireCap('manage_forms');
   const forms = listForms();
   const counts = submissionCounts();
 
@@ -20,7 +20,7 @@ export default async function Forms({ searchParams }: { searchParams: Promise<Fl
       <div className="sc-head">
         <div>
           <h1>Forms</h1>
-          <p>Build your own forms, then add them to any page with the “Custom form” widget. Entries arrive under Submissions.</p>
+          <p>Build your own forms, then add them to any page — or to a popup — with the “Custom form” widget. Entries arrive under Submissions and are emailed to you.</p>
         </div>
         <div className="sc-actions">
           <Link className="sc-btn sc-btn-primary" href="/admin/forms/new">New form</Link>
@@ -48,7 +48,7 @@ export default async function Forms({ searchParams }: { searchParams: Promise<Fl
                     <td className="sc-muted">{f.slug}</td>
                     <td className="sc-num">{f.fields.length}</td>
                     <td className="sc-num">{n ? <Link className="sc-rowlink" href={`/admin/submissions?type=${encodeURIComponent(formType(f.slug))}`}>{n}</Link> : <span className="sc-muted">0</span>}</td>
-                    <td className="sc-muted">{used.length ? used.map((u) => u.title).join(', ') : '—'}</td>
+                    <td className="sc-muted">{used.length ? used.map((u) => (u.kind === 'popup' ? `${u.title} (popup)` : u.title)).join(', ') : '—'}</td>
                     <td className="sc-num">
                       <span className="fm-rowactions">
                         <Link className="sc-btn sc-btn-sm" href={`/admin/forms/${f.id}`}>Edit</Link>

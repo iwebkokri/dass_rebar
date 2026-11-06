@@ -4,6 +4,7 @@ import Flash from '@/components/admin/Flash';
 import { requireCap } from '@/lib/auth';
 import { all, get } from '@/lib/db';
 import { stamp } from '@/lib/format';
+import { hasColumn } from '@/lib/schema-ready';
 import { FORM_TYPES, customTypeList, isKnownType, typeLabel } from '@/lib/submissions';
 import { markAllRead } from '../../actions';
 
@@ -32,7 +33,7 @@ export default async function Submissions({ searchParams }: Props) {
 
   const total = get<{ c: number }>(`SELECT COUNT(*) AS c FROM submissions ${clause}`, ...args)?.c ?? 0;
   const rows = all<any>(
-    `SELECT id, type, name, email, phone, company, message, status, attachments, created_at FROM submissions ${clause} ORDER BY id DESC LIMIT ${PAGE_SIZE} OFFSET ${(page - 1) * PAGE_SIZE}`,
+    `SELECT id, type, name, email, phone, company, message, status, attachments, created_at${hasColumn('submissions', 'source_url') && hasColumn('submissions', 'source_label') ? ', source_url, source_label' : ''} FROM submissions ${clause} ORDER BY id DESC LIMIT ${PAGE_SIZE} OFFSET ${(page - 1) * PAGE_SIZE}`,
     ...args
   );
   const counts = Object.fromEntries(all<{ status: string; c: number }>('SELECT status, COUNT(*) AS c FROM submissions GROUP BY status').map((r) => [r.status, r.c]));
@@ -83,7 +84,7 @@ export default async function Submissions({ searchParams }: Props) {
                 return (
                   <tr key={s.id}>
                     <td className="sc-muted" style={{ whiteSpace: 'nowrap' }}>{stamp(s.created_at)}</td>
-                    <td><span className="sc-badge">{typeLabel(s.type, labels)}</span></td>
+                    <td><span className="sc-badge">{typeLabel(s.type, labels)}</span>{(s.source_label || s.source_url) && <div className="sc-muted" style={{ fontSize: 12, marginTop: 4 }} title="Where the visitor was">{s.source_label || s.source_url}</div>}</td>
                     <td><Link className="sc-rowlink" href={`/admin/submissions/${s.id}`}>{s.name || s.email || `#${s.id}`}</Link>{s.company && <div className="sc-muted">{s.company}</div>}</td>
                     <td>{s.email}{s.phone && <div className="sc-muted">{s.phone}</div>}</td>
                     <td className="sc-muted" style={{ maxWidth: 280 }}>{s.message.slice(0, 90)}{s.message.length > 90 ? '…' : ''}{files > 0 && <div>{files} attachment{files > 1 ? 's' : ''}</div>}</td>

@@ -19,9 +19,10 @@ export function ContactForm({ title, buttonLabel, successTitle, successText }: {
     e.preventDefault();
     if (busy) return;
     const data = new FormData(e.currentTarget);
+    const from = e.currentTarget;
     setBusy(true);
     setError('');
-    const res = await submitForm('contact', data);
+    const res = await submitForm('contact', data, from);
     setBusy(false);
     if (res.ok) setSent(true);
     else setError(res.error || '');
@@ -102,7 +103,7 @@ export function Newsletter({ placeholder, buttonLabel, successText }: { placehol
     const data = new FormData(form);
     setBusy(true);
     setMsg(null);
-    const res = await submitForm('newsletter', data);
+    const res = await submitForm('newsletter', data, form);
     setBusy(false);
     if (res.ok) form.reset();
     setMsg({ ok: res.ok, text: res.ok ? successText || 'Thanks — you’re subscribed.' : res.error || 'Something went wrong.' });
@@ -126,36 +127,62 @@ function Field({ f, id }: { f: FormField; id: string }) {
   const base = { id, name: f.id, required: req };
   const label = <label htmlFor={id} className="dr-fld-label">{f.label}{req ? ' *' : ''}</label>;
   const cls = `dr-fld${f.width === 'half' ? '' : ' dr-fld--full'}`;
+  const help = f.help ? <small className="dr-fld-help" id={`${id}-help`}>{f.help}</small> : null;
+  const described = f.help ? { 'aria-describedby': `${id}-help` } : {};
 
-  if (f.type === 'checkbox') {
+  // The value of a hidden field is stored from the form's definition on the server; this input only mirrors it.
+  if (f.type === 'hidden') return <input type="hidden" name={f.id} value={f.value || ''} readOnly />;
+
+  if (f.type === 'checkbox' || f.type === 'consent') {
     return (
       <div className={cls}>
         <label className="dr-check">
-          <input type="checkbox" value="Yes" {...base} />
+          <input type="checkbox" value="Yes" {...base} {...described} />
           <span>{f.label}{req ? ' *' : ''}</span>
         </label>
+        {help}
+      </div>
+    );
+  }
+  if (f.type === 'radio' || f.type === 'checkboxes') {
+    const kind = f.type === 'radio' ? 'radio' : 'checkbox';
+    return (
+      <div className={cls}>
+        <fieldset className="dr-qt-fs dr-form-field" {...described}>
+          <legend className="dr-fld-label dr-legend">{f.label}{req ? ' *' : ''}</legend>
+          <div className="dr-radios">
+            {(f.options || []).map((o, i) => (
+              <label key={o} className="dr-radio">
+                {/* a required radio group only needs the first input marked required; a checkbox group is validated on the server */}
+                <input type={kind} name={f.id} value={o} required={kind === 'radio' && req && i === 0} /> {o}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        {help}
       </div>
     );
   }
   if (f.type === 'textarea') {
-    return <div className={cls}>{label}<textarea {...base} className="dr-input dr-input--area dr-form-field" rows={4} maxLength={5000} placeholder={f.placeholder || undefined} /></div>;
+    return <div className={cls}>{label}<textarea {...base} {...described} className="dr-input dr-input--area dr-form-field" rows={4} maxLength={5000} placeholder={f.placeholder || undefined} />{help}</div>;
   }
   if (f.type === 'select') {
     return (
       <div className={cls}>
         {label}
-        <select {...base} className="dr-input dr-form-field" defaultValue="">
+        <select {...base} {...described} className="dr-input dr-form-field" defaultValue="">
           <option value="" disabled={req}>{f.placeholder || 'Select…'}</option>
           {(f.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
+        {help}
       </div>
     );
   }
   if (f.type === 'file') {
-    return <div className={cls}>{label}<input {...base} type="file" className="dr-input dr-input--file dr-form-field" /></div>;
+    return <div className={cls}>{label}<input {...base} {...described} type="file" className="dr-input dr-input--file dr-form-field" />{help}</div>;
   }
   const type = ['text', 'email', 'tel', 'number', 'date'].includes(f.type) ? f.type : 'text';
-  return <div className={cls}>{label}<input {...base} type={type} className="dr-input dr-form-field" placeholder={f.placeholder || undefined} autoComplete={type === 'email' ? 'email' : type === 'tel' ? 'tel' : undefined} /></div>;
+  return <div className={cls}>{label}<input {...base} {...described} type={type} className="dr-input dr-form-field" placeholder={f.placeholder || undefined} autoComplete={type === 'email' ? 'email' : type === 'tel' ? 'tel' : undefined} />{help}</div>;
 }
 
 export function CustomForm({ form }: { form: FormDef }) {
@@ -173,7 +200,7 @@ export function CustomForm({ form }: { form: FormDef }) {
     data.set('form_id', String(form.id));
     setBusy(true);
     setError('');
-    const res = await submitForm('form', data);
+    const res = await submitForm('form', data, target);
     setBusy(false);
     if (!res.ok) { setError(res.error || ''); return; }
     const redirect = st.redirectUrl ? safeUrl(st.redirectUrl) : '';
